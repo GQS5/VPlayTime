@@ -2,13 +2,71 @@
 
 ## [Unreleased]
 
+### VPlayTime 1.9 — UX, messages and GUI reliability (2026-09-18)
+
+Claimed-state reliability:
+
+- Full click → validate → persist → execute → refresh → render audit:
+  no stale-snapshot path found in 1.8.2 (live-verified on item and
+  command rewards), hardened anyway: post-claim refresh now re-resolves
+  the menu from the live map (a reload mid-claim can no longer repaint
+  a stale layout), and every SUCCESS is verified back against the claim
+  set with a SEVERE tripwire if memory and durable state ever disagree.
+- GUI renders now resolve the playtime provider ONCE per render
+  (previously 2N+1 resolutions per open — 30+ PlaceholderAPI parses
+  with an external provider) and freeze one value per frame so all
+  slots agree. Open path confirmed hop-free (create → render → open on
+  the region thread); the single entity-scheduler hop in claim refresh
+  is a Folia requirement, not overhead.
+- New visuals: LOCKED red, no glow → CLAIMABLE orange, no glow →
+  CLAIMED lime + glow.
+- Regression suite: full LOCKED→CLAIMABLE→SUCCESS→CLAIMED flow,
+  duplicate-grant prevention, failed-execution stays unclaimed,
+  reload-swap and reconnect persistence.
+
+Configuration:
+
+- Removed dead `playtime.count-afk` (parsed, never read); old files
+  keep working, the key is ignored. Menu `name` is now optional
+  (defaults to title). Everything else audited and kept with reasons.
+- Shipped default rebuilt: 3 pages × 5 levels (1–15, slots 11–15),
+  no gradients, no filler, no promo blocks, plain-English header
+  comments. Level 1–15 data (times, amounts, actions) byte-identical
+  to the previous default. Existing servers keep their on-disk files.
+
+Messages (8 → 26 situations, all wired, none hardcoded anymore):
+
+- New: usage, no-permission, players-only, unknown-menu/player,
+  no-data, reload-detail, full `/vplaytime info` rows, reset/done
+  variants, opt-in menu-opened/menu-closed (silent by default).
+- Claim locked now names the requirement (%required_playtime%).
+- One `MessageFormat` pass: real placeholders only, missing values
+  removed (never raw, never an exception), values MiniMessage-escaped.
+- Deliberately NOT messaged (documented in docs/MESSAGES.md): retry
+  prompts, unknown-reward clicks, page-turn notices, provider chat.
+
+- Tests: 286 → 301. Docs: new MESSAGES.md; README/CONFIGURATION/
+  REWARDS updated to the 3-page default.
+
+Migration (no forced steps, no restarts):
+
+- Existing `rewards.yml` files load unchanged (menu `name` now
+  optional, unknown keys ignored). The new 3-page default ships only
+  to fresh installs; existing servers keep their levels.
+- Existing `messages.yml` files load unchanged, but the 18 new
+  situations default to silent. To receive the full new set: back up
+  `messages.yml`, delete it, `/vplaytime reload` (regenerates shipped).
+- `playtime.count-afk` is ignored when present; safe to delete.
+- Production: change remaining `xp give` to `xp add` (see above).
+
 ### Production money-farm fix + execution guards (2026-09-18)
 
 - Root cause of the RM7PC incident: `exp give` is not a console command
   (vanilla is `xp`), so every money reward granted action 0 (addmoney)
   then failed action 1 — and revoke-for-retry re-granted the money on
   every click (~$33K farmed, nothing lost or duplicated). Shipped
-  default now uses `xp give %player% N` (60 levels, amounts unchanged).
+  default now uses `xp add %player% N` (15 levels, amounts unchanged;
+  `give` is not valid `xp` syntax on 1.21 — verified live).
 - Load time now warns once per reload about console command roots no
   enabled plugin provides (warn-only, never a load failure) — this would
   have flagged `exp` (and would flag `points`/`cc` if those plugins are

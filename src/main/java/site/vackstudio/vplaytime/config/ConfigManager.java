@@ -38,7 +38,7 @@ public final class ConfigManager {
     private final RewardManager rewards;
 
     private volatile ConfigSnapshot snapshot = new ConfigSnapshot(
-            new GlobalConfig(false, 30, true, PlaytimeProviderConfig.defaults()),
+            new GlobalConfig(false, 30, PlaytimeProviderConfig.defaults()),
             new MessageConfig("", "", "", "", "", "", "", ""),
             Map.of(MenuRegistry.DEFAULT_MENU_ID, new MenuDefinition(
                     MenuRegistry.DEFAULT_MENU_ID, "Playtime", 1, "Playtime", 3, Map.of(), Map.of(),
@@ -159,7 +159,6 @@ public final class ConfigManager {
             throw new ConfigError("config.yml", "storage.autosave-seconds",
                     "storage.autosave-seconds is " + autosave + ", but it must be 5 or higher.");
         }
-        boolean countAfk = config.getBoolean("playtime.count-afk", true);
         PlaytimeProviderConfig provider;
         try {
             provider = PlaytimeProviderConfig.parse(config.getConfigurationSection("playtime"));
@@ -168,7 +167,7 @@ public final class ConfigManager {
         } catch (IllegalStateException ex) {
             throw new ConfigError("config.yml", "playtime", ex.getMessage());
         }
-        return new GlobalConfig(debug, autosave, countAfk, provider);
+        return new GlobalConfig(debug, autosave, provider);
     }
 
     /**
@@ -191,23 +190,46 @@ public final class ConfigManager {
 
     /** Pure message validation; package-visible for unit tests. */
     static MessageConfig parseMessages(YamlConfiguration yaml) {
-        for (String section : new String[]{"claim", "admin"}) {
+        for (String section : new String[]{"general", "claim", "admin", "gui"}) {
             if (yaml.isSet(section) && !yaml.isConfigurationSection(section)) {
                 throw new ConfigError("messages.yml", section,
                         "'" + section + "' must be a section (check indentation).");
             }
         }
+        ConfigurationSection general = yaml.getConfigurationSection("general");
         ConfigurationSection claim = yaml.getConfigurationSection("claim");
         ConfigurationSection admin = yaml.getConfigurationSection("admin");
+        ConfigurationSection gui = yaml.getConfigurationSection("gui");
         return new MessageConfig(
                 text("prefix", yaml.getString("prefix", "")),
                 text("loading", yaml.getString("loading", "")),
+                general == null ? "" : text("general.usage", general.getString("usage", "")),
+                general == null ? "" : text("general.no-permission", general.getString("no-permission", "")),
+                general == null ? "" : text("general.players-only", general.getString("players-only", "")),
+                general == null ? "" : text("general.unknown-menu", general.getString("unknown-menu", "")),
+                general == null ? "" : text("general.unknown-player", general.getString("unknown-player", "")),
+                general == null ? "" : text("general.no-data", general.getString("no-data", "")),
                 claim == null ? "" : text("claim.success", claim.getString("success", "")),
                 claim == null ? "" : text("claim.locked", claim.getString("locked", "")),
                 claim == null ? "" : text("claim.already-claimed", claim.getString("already-claimed", "")),
                 claim == null ? "" : text("claim.failed", claim.getString("failed", "")),
                 admin == null ? "" : text("admin.reload-success", admin.getString("reload-success", "")),
-                admin == null ? "" : text("admin.reload-failed", admin.getString("reload-failed", "")));
+                admin == null ? "" : text("admin.reload-failed", admin.getString("reload-failed", "")),
+                admin == null ? "" : text("admin.reload-detail", admin.getString("reload-detail", "")),
+                admin == null ? "" : text("admin.info-header", admin.getString("info-header", "")),
+                admin == null ? "" : text("admin.info-uuid", admin.getString("info-uuid", "")),
+                admin == null ? "" : text("admin.info-playtime-online",
+                        admin.getString("info-playtime-online", "")),
+                admin == null ? "" : text("admin.info-playtime-offline",
+                        admin.getString("info-playtime-offline", "")),
+                admin == null ? "" : text("admin.info-claims-none", admin.getString("info-claims-none", "")),
+                admin == null ? "" : text("admin.info-claims", admin.getString("info-claims", "")),
+                admin == null ? "" : text("admin.info-provider", admin.getString("info-provider", "")),
+                admin == null ? "" : text("admin.reset-done", admin.getString("reset-done", "")),
+                admin == null ? "" : text("admin.reset-failed", admin.getString("reset-failed", "")),
+                admin == null ? "" : text("admin.resetall-done", admin.getString("resetall-done", "")),
+                gui == null ? "" : text("gui.menu-opened", gui.getString("menu-opened", "")),
+                gui == null ? "" : text("gui.menu-closed", gui.getString("menu-closed", "")));
     }
 
     private static String text(String field, String value) {
@@ -256,7 +278,8 @@ public final class ConfigManager {
         fresh.set("debug.enabled", old.getBoolean("debug.enabled", false));
         fresh.set("storage.type", "sqlite");
         fresh.set("storage.autosave-seconds", old.getInt("storage.autosave-seconds", 30));
-        fresh.set("playtime.count-afk", old.getBoolean("playtime.count-afk", true));
+        // count-afk was removed in 1.9 (playtime always counts; the key did
+        // nothing) — old files may still carry it, it is simply ignored.
         fresh.set("playtime.provider", old.getString("playtime.provider", "internal"));
         fresh.set("playtime.placeholder.value",
                 old.getString("playtime.placeholder.value", "%statistic_seconds_played%"));
@@ -463,6 +486,24 @@ public final class ConfigManager {
 
     public String loadingMessage() {
         return snapshot.messages().prefixed(snapshot.messages().loading());
+    }
+
+    /**
+     * Formats a message template with values and prepends the prefix.
+     * Missing values render as empty; values are MiniMessage-escaped.
+     * A blank result stays blank (no lone prefix) so senders can skip it.
+     */
+    public String message(String template, Map<String, String> values) {
+        String formatted = site.vackstudio.vplaytime.gui.MessageFormat.format(template, values);
+        if (formatted.isBlank()) {
+            return "";
+        }
+        return snapshot.messages().prefixed(formatted);
+    }
+
+    /** Formats a raw (already read from {@link #messages()}) template. */
+    public String message(String template) {
+        return message(template, Map.of());
     }
 
     public String reloadedOkMessage() {

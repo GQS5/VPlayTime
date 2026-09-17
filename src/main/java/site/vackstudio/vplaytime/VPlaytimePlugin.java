@@ -114,7 +114,7 @@ public final class VPlaytimePlugin extends JavaPlugin {
         VPlaytimeAPI.setInstance(new VPlaytimeAPI(playtimeManager, rewardManager, claimManager, clock));
         getServer().getPluginManager().registerEvents(
                 new RewardMenuListener(rewardManager, playtimeManager, claimManager, clock, this::findMenuOrNull,
-                        configManager),
+                        configManager, getLogger()),
                 this);
         getServer().getPluginManager().registerEvents(new PlayerListener(playtimeManager), this);
         registerExpansion();

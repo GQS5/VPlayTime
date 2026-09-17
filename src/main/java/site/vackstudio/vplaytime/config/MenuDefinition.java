@@ -11,8 +11,9 @@ import java.util.Map;
  *
  * <p>Concepts for server owners: the menu <b>id</b> (for example
  * {@code long_playtime}) is used in configuration and commands; the
- * <b>name</b> is the human-readable label; the <b>title</b> is the actual
- * inventory window title. The <b>order</b> decides page sequence when
+ * <b>title</b> is the actual inventory window title. The <b>name</b> is
+ * optional legacy (defaults to the title) and nothing reads it
+ * separately. The <b>order</b> decides page sequence when
  * menus are listed (1, 2, 3, ...); removing a menu never forces
  * renumbering the rest.
  *

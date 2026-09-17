@@ -141,9 +141,18 @@ class MenuRegistryTest {
     }
 
     @Test
-    void rejectsBlankNameAndTitle() throws Exception {
-        assertInvalid("menus:\n" + menuBlock("main", "1", "3", rewardBlock("reward_1", 0, 10))
-                .replace("name: \"main label\"", "name: \"  \""), "'name'");
+    void blankNameFallsBackToTitle() throws Exception {
+        // 'name' is optional legacy: blank or missing falls back to title.
+        var menus = parse("menus:\n" + menuBlock("main", "1", "3", rewardBlock("reward_1", 0, 10))
+                .replace("name: \"main label\"", "name: \"  \""));
+        assertEquals("main title", menus.get("main").name());
+        var noName = parse("menus:\n" + menuBlock("main", "1", "3", rewardBlock("reward_1", 0, 10))
+                .replace("    name: \"main label\"\n", ""));
+        assertEquals("main title", noName.get("main").name());
+    }
+
+    @Test
+    void rejectsBlankTitle() throws Exception {
         assertInvalid("menus:\n" + menuBlock("main", "1", "3", rewardBlock("reward_1", 0, 10))
                 .replace("title: \"main title\"", "title: \"\""), "'title'");
     }

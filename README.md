@@ -4,12 +4,12 @@ Configurable Minecraft playtime rewards plugin with level progression, multiple 
 
 - **Platform:** Paper & Folia (1.21.11, `folia-supported`)
 - **Java:** 21
-- **Current version:** 1.8.2
+- **Current version:** 1.9.0
 - **License:** MIT
 
 ## What it does
 
-VPlayTime tracks how long players have played and lets them claim tiered rewards as they reach playtime milestones. The shipped default contains **60 levels across 4 menus** (1 hour for level 1 up to 560 hours for level 60), each with locked / claimable / claimed display states, atomic claims (never granted twice), and SQLite persistence.
+VPlayTime tracks how long players have played and lets them claim tiered rewards as they reach playtime milestones. The shipped default contains **15 levels across 3 pages** (1 hour for level 1 up to 112 hours for level 15), each with locked / claimable / claimed display states, atomic claims (never granted twice), and SQLite persistence.
 
 ## Requirements
 
@@ -93,7 +93,7 @@ Details: [`docs/PLACEHOLDERS.md`](docs/PLACEHOLDERS.md).
 
 ## Reward levels (shipped default)
 
-60 levels (`level_1`…`level_60`) across `main`, `menu_2`, `menu_3`, `menu_4`, from 1 hour to 560 hours. States render red (locked) → yellow glowing (claimable) → lime glowing (claimed). Money actions use `addmoney <player> <amount>` (adapt to your economy plugin), XP uses vanilla `xp give`, items use direct grants. Claims are atomic: memory reserve → durable insert → execute; failures revoke for retry and can never double-grant.
+15 levels (`level_1`…`level_15`) across `main`, `menu_2`, `menu_3` (5 per page), from 1 hour to 112 hours. States render red (locked) → orange (claimable) → lime + glow (claimed). Money actions use `addmoney <player> <amount>` (adapt to your economy plugin), XP uses vanilla `xp add`, items use direct grants. Claims are atomic: memory reserve → durable insert → execute; failures revoke for retry and can never double-grant.
 
 ## Compatibility / dependencies
 
@@ -116,7 +116,7 @@ Requires JDK 21 (Gradle toolchain resolves it). The JAR lands in `build/libs/VPl
 ./gradlew clean test
 ```
 
-JUnit 5, no server needed (in-memory clocks, temp SQLite databases, YAML fixtures). 286 tests covering config parsing, reload transactions, providers, claims atomicity, GUI math and storage. See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+JUnit 5, no server needed (in-memory clocks, temp SQLite databases, YAML fixtures). 301 tests covering config parsing, reload transactions, providers, claims atomicity, GUI math and storage. See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ## Contributing
 
@@ -128,4 +128,4 @@ MIT — see [`LICENSE`](LICENSE).
 
 ## Releases
 
-Versioned releases with attached, CI-verified JARs: [Releases](https://github.com/GQS5/VPlayTime/releases). Current: **v1.8.2**. History: [`CHANGELOG.md`](CHANGELOG.md).
+Versioned releases with attached, CI-verified JARs: [Releases](https://github.com/GQS5/VPlayTime/releases). Current: **v1.9.0**. History: [`CHANGELOG.md`](CHANGELOG.md).

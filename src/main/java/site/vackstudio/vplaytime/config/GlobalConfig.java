@@ -6,7 +6,6 @@ package site.vackstudio.vplaytime.config;
 public record GlobalConfig(
         boolean debugEnabled,
         int autosaveSeconds,
-        boolean countAfk,
         PlaytimeProviderConfig provider) {
 
     public GlobalConfig {
@@ -19,7 +18,7 @@ public record GlobalConfig(
     }
 
     /** Backwards-compatible constructor: provider defaults to internal. */
-    public GlobalConfig(boolean debugEnabled, int autosaveSeconds, boolean countAfk) {
-        this(debugEnabled, autosaveSeconds, countAfk, PlaytimeProviderConfig.defaults());
+    public GlobalConfig(boolean debugEnabled, int autosaveSeconds) {
+        this(debugEnabled, autosaveSeconds, PlaytimeProviderConfig.defaults());
     }
 }

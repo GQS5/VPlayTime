@@ -15,6 +15,7 @@ import site.vackstudio.vplaytime.gui.PlaytimeFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -55,8 +56,8 @@ public final class VPlaytimeCommand implements BasicCommand {
                 if (args.length == 1) {
                     openMenuId(sender, args[0].toLowerCase(Locale.ROOT));
                 } else {
-                    tell(sender,
-                            "<red>Unknown subcommand. Usage: /vplaytime <reload|info|reset|resetall|<menu>>");
+                    tell(sender, plugin.configManager().message(
+                            plugin.configManager().messages().usage()));
                 }
             }
         }
@@ -64,7 +65,8 @@ public final class VPlaytimeCommand implements BasicCommand {
 
     private void openMenu(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            tell(sender, "<red>Players only.");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().playersOnly()));
             return;
         }
         if (plugin.playtimeManager().find(player.getUniqueId()).isEmpty()) {
@@ -72,11 +74,13 @@ public final class VPlaytimeCommand implements BasicCommand {
             return;
         }
         plugin.mainMenu().open(player);
+        announceOpened(player, plugin.mainMenu().definition().id());
     }
 
     private void openMenuId(CommandSender sender, String menuId) {
         if (!(sender instanceof Player player)) {
-            tell(sender, "<red>Players only.");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().playersOnly()));
             return;
         }
         if (plugin.playtimeManager().find(player.getUniqueId()).isEmpty()) {
@@ -85,19 +89,31 @@ public final class VPlaytimeCommand implements BasicCommand {
         }
         var menu = plugin.findMenu(menuId).orElse(null);
         if (menu == null) {
-            tell(sender, "<red>Unknown menu '" + escape(menuId) + "'.");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().unknownMenu(), Map.of("menu", menuId)));
             return;
         }
         menu.open(player);
+        announceOpened(player, menuId);
+    }
+
+    /** Opt-in "menu opened" notice (silent by default). */
+    private void announceOpened(Player player, String menuId) {
+        String raw = plugin.configManager().messages().menuOpened();
+        if (raw != null && !raw.isBlank()) {
+            tell(player, plugin.configManager().message(raw, Map.of("menu", menuId)));
+        }
     }
 
     private void reload(CommandSender sender, String[] args) {
         if (!sender.hasPermission("vplaytime.admin")) {
-            tell(sender, "<red>No permission.");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().noPermission()));
             return;
         }
         if (args.length != 1) {
-            tell(sender, "<red>Usage: /vplaytime reload");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().usage()));
             return;
         }
         var failure = plugin.vplaytimeReload();
@@ -105,47 +121,58 @@ public final class VPlaytimeCommand implements BasicCommand {
             tell(sender, plugin.configManager().reloadedOkMessage());
             return;
         }
-        // Generic configured line first, then the precise reason (escaped so
-        // config values can never inject formatting into chat).
-        tell(sender, plugin.configManager().reloadedFailMessage()
-                + "<gray> Reason: " + escape(failure.get()));
+        // Generic configured line first, then the precise reason.
+        tell(sender, plugin.configManager().reloadedFailMessage());
+        tell(sender, plugin.configManager().message(
+                plugin.configManager().messages().reloadDetail(), Map.of("detail", failure.get())));
     }
 
     private void info(CommandSender sender, String[] args) {
         if (!sender.hasPermission("vplaytime.info")) {
-            tell(sender, "<red>No permission.");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().noPermission()));
             return;
         }
         if (args.length != 2) {
-            tell(sender, "<red>Usage: /vplaytime info <player>");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().usage()));
             return;
         }
         Target target = resolve(args[1]);
         if (target == null) {
-            tell(sender, "<red>Unknown player '" + args[1] + "'.");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().unknownPlayer(), Map.of("player", args[1])));
             return;
         }
         plugin.adminService().info(target.uuid()).thenAccept(info -> {
             if (!info.found()) {
-                tellAsync(sender, "<red>No VPlaytime data for '" + target.label() + "'.");
+                tellAsync(sender, plugin.configManager().message(
+                        plugin.configManager().messages().noData(), Map.of("player", target.label())));
                 return;
             }
+            var messages = plugin.configManager().messages();
+            var manager = plugin.configManager();
             List<String> lines = new ArrayList<>();
-            lines.add("<gold>--- VPlaytime: " + escape(target.label()) + " ---");
-            lines.add("<gray>UUID: " + info.uuid());
-            lines.add("<dark_gray>Provider: " + escape(plugin.playtimeManager().providerId()));
+            lines.add(manager.message(messages.infoHeader(), Map.of("player", target.label())));
+            lines.add(manager.message(messages.infoUuid(), Map.of("uuid", info.uuid().toString())));
+            lines.add(manager.message(messages.infoProvider(),
+                    Map.of("provider", plugin.playtimeManager().providerId())));
             if (info.online()) {
-                lines.add("<gray>Playtime: " + PlaytimeFormat.format(info.effectiveSeconds())
-                        + " <dark_gray>(stored " + PlaytimeFormat.format(info.storedSeconds()) + ")");
+                lines.add(manager.message(messages.infoPlaytimeOnline(), Map.of(
+                        "playtime", PlaytimeFormat.format(info.effectiveSeconds()),
+                        "stored", PlaytimeFormat.format(info.storedSeconds()))));
             } else {
-                lines.add("<gray>Playtime: " + PlaytimeFormat.format(info.storedSeconds())
-                        + " <dark_gray>(offline)");
+                lines.add(manager.message(messages.infoPlaytimeOffline(), Map.of(
+                        "playtime", PlaytimeFormat.format(info.storedSeconds()))));
             }
             if (info.claimed().isEmpty()) {
-                lines.add("<gray>Claims: none of " + info.rewardCount());
+                lines.add(manager.message(messages.infoClaimsNone(),
+                        Map.of("total", Integer.toString(info.rewardCount()))));
             } else {
-                lines.add("<gray>Claims: " + info.claimed().size() + "/" + info.rewardCount()
-                        + " <dark_gray>(" + String.join(", ", info.claimed()) + ")");
+                lines.add(manager.message(messages.infoClaims(), Map.of(
+                        "claimed", Integer.toString(info.claimed().size()),
+                        "total", Integer.toString(info.rewardCount()),
+                        "list", String.join(", ", info.claimed()))));
             }
             tellAsync(sender, String.join("<newline>", lines));
         });
@@ -153,50 +180,63 @@ public final class VPlaytimeCommand implements BasicCommand {
 
     private void reset(CommandSender sender, String[] args) {
         if (!sender.hasPermission("vplaytime.reset")) {
-            tell(sender, "<red>No permission.");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().noPermission()));
             return;
         }
         if (args.length != 3) {
-            tell(sender, "<red>Usage: /vplaytime reset <player> <reward>");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().usage()));
             return;
         }
         Target target = resolve(args[1]);
         if (target == null) {
-            tell(sender, "<red>Unknown player '" + args[1] + "'.");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().unknownPlayer(), Map.of("player", args[1])));
             return;
         }
         String rewardId = args[2].toLowerCase(Locale.ROOT);
         plugin.adminService().reset(target.uuid(), rewardId).thenAccept(outcome -> {
             if (!outcome.ok()) {
-                tellAsync(sender, "<red>Reset failed for '" + target.label() + "': " + escape(outcome.detail()));
+                tellAsync(sender, plugin.configManager().message(
+                        plugin.configManager().messages().resetFailed(), Map.of(
+                                "player", target.label(), "detail", outcome.detail())));
                 return;
             }
             String note = outcome.hadClaim() ? "Reward reset." : "Player had no such claim.";
-            tellAsync(sender, "<green>Reward '" + escape(rewardId) + "' reset for '"
-                    + escape(target.label()) + "'. <gray>" + escape(note));
+            tellAsync(sender, plugin.configManager().message(
+                    plugin.configManager().messages().resetDone(), Map.of(
+                            "reward", rewardId, "player", target.label(), "note", note)));
         });
     }
 
     private void resetAll(CommandSender sender, String[] args) {
         if (!sender.hasPermission("vplaytime.reset")) {
-            tell(sender, "<red>No permission.");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().noPermission()));
             return;
         }
         if (args.length != 2) {
-            tell(sender, "<red>Usage: /vplaytime resetall <player>");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().usage()));
             return;
         }
         Target target = resolve(args[1]);
         if (target == null) {
-            tell(sender, "<red>Unknown player '" + args[1] + "'.");
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().unknownPlayer(), Map.of("player", args[1])));
             return;
         }
         plugin.adminService().resetAll(target.uuid()).thenAccept(outcome -> {
             if (!outcome.ok()) {
-                tellAsync(sender, "<red>Reset failed for '" + target.label() + "': " + escape(outcome.detail()));
+                tellAsync(sender, plugin.configManager().message(
+                        plugin.configManager().messages().resetFailed(), Map.of(
+                                "player", target.label(), "detail", outcome.detail())));
                 return;
             }
-            tellAsync(sender, "<green>" + escape(outcome.detail()) + " for '" + escape(target.label()) + "'.");
+            tellAsync(sender, plugin.configManager().message(
+                    plugin.configManager().messages().resetAllDone(), Map.of(
+                            "detail", outcome.detail(), "player", target.label())));
         });
     }
 
@@ -227,6 +267,9 @@ public final class VPlaytimeCommand implements BasicCommand {
     }
 
     private void tell(CommandSender sender, String mini) {
+        if (mini == null || mini.isBlank()) {
+            return;
+        }
         sender.sendMessage(MINI.deserialize(mini));
     }
 
@@ -236,6 +279,9 @@ public final class VPlaytimeCommand implements BasicCommand {
      * RCON/panel admins never lose async outcomes to response timing.
      */
     private void tellAsync(CommandSender sender, String mini) {
+        if (mini == null || mini.isBlank()) {
+            return;
+        }
         Component message = MINI.deserialize(mini);
         if (sender instanceof Player player) {
             if (!player.isOnline()) {
@@ -246,10 +292,6 @@ public final class VPlaytimeCommand implements BasicCommand {
             sender.sendMessage(message);
             plugin.getLogger().info("[admin] " + mini.replaceAll("<[^>]*>", ""));
         }
-    }
-
-    private static String escape(String text) {
-        return text.replace("<", "\\<");
     }
 
     @Override

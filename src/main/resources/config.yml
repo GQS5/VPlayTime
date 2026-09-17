@@ -28,8 +28,6 @@ storage:
   autosave-seconds: 30
 
 playtime:
-  # true = playtime counts even while AFK.
-  count-afk: true
   # Which clock measures playtime for levels, rewards and GUI text.
   #   internal    = VPlaytime's own session timer (default, no dependencies).
   #   placeholder = an external value read through PlaceholderAPI, e.g. a

@@ -1,306 +1,29 @@
 # ============================================================
-# VPlaytime - Menus & Rewards
-# by VackStudio
+# VPlaytime - Rewards & Menus
 # ============================================================
 #
-# Shipped default: 60 playtime levels across 4 menus
-# (Levels 1-15: 1h+ ... Levels 46-60: up to 560h).
-# Open them with /vplaytime, /vplaytime menu_2, and so on.
+# 3 pages x 5 levels (1-15). Each level: slot, time, look, actions.
 #
-# This is the main content file. It holds everything players see:
+# time:   30s / 10m / 1h / 2d / 1w  (playtime needed to unlock)
+# actions run in order when claimed. In commands you can use:
+#   %player% %uuid% %claim_id%
 #
-#   Menu   = one inventory screen (for example "main").
-#   Reward = one item inside that screen (for example "reward_1").
+# Menu lore/names understand:
+#   %playtime% %playtime_seconds% %playtime_minutes% %playtime_hours%
+#   %required_playtime% %reward_status%
 #
+# To add a level: copy a block, new id (level_16...), free slot,
+# bigger time. To add a page: copy a menu, new id, next order number.
+#
+# Player/admin texts live in messages.yml.
 # After editing, run:  /vplaytime reload
-# If the reload reports an error, your OLD menus stay active,
-# so you can fix the file without breaking anything.
-#
-# ------------------------------------------------------------
-# HOW TO ADD A REWARD
-# ------------------------------------------------------------
-#
-# 1. Copy an existing reward (reward_1 is a good template).
-# 2. Give the copy a new ID, for example reward_4.
-# 3. Change required-seconds (time is measured in seconds).
-# 4. Choose a free slot in the same menu.
-# 5. Change the name, lore and materials.
-# 6. Change the actions (what the player receives).
-# 7. Save the file.
-# 8. Run:  /vplaytime reload
-#
-# Example:
-#
-#   reward_4:
-#     slot: 16
-#     required-seconds: 14400
-#     ...
-#
-# ------------------------------------------------------------
-# HOW TO ADD A MENU
-# ------------------------------------------------------------
-#
-# 1. Copy an existing menu (copy from "main:" down to its last line).
-# 2. Give the copy a new menu ID, for example menu_2.
-#    The ID is used in commands:  /vplaytime menu_2
-# 3. Change "name" (the human-readable label).
-# 4. Set the next free "order" number (1, 2, 3, ...).
-# 5. Change title, rows and sounds if you like.
-# 6. Add the rewards you want (copy reward blocks).
-# 7. Save the file.
-# 8. Run:  /vplaytime reload
-#
-# There is no fixed limit to the number of menus.
-# Menus are ordered by "order": order 1 is page 1, order 2
-# is page 2, and so on. Removing a menu never forces you to
-# renumber the rest.
-#
-# ------------------------------------------------------------
-# REWARD ACTIONS
-# ------------------------------------------------------------
-#
-# A reward can contain multiple actions. Each action is one
-# thing the player receives when claiming that reward.
-#
-# Example:
-#
-# actions:
-#   - type: item
-#     material: DIAMOND
-#     amount: 10
-#
-#   - type: item
-#     material: GOLD_INGOT
-#     amount: 20
-#
-# You can add as many actions as your reward needs
-# (up to 64 per reward). They run in the order you list them:
-# items arrive together in one delivery, commands run
-# afterwards on the console in order.
-#
-#   type: item       Give the player an item.
-#   material:        Minecraft item type, for example DIAMOND.
-#   amount:          How many items to give (1 to 64).
-#
-#   type: command    Run a console command.
-#   command:         The command. %player% becomes the player name.
-#
-# ------------------------------------------------------------
-# MENU BUTTONS (optional)
-# ------------------------------------------------------------
-#
-# A menu can also hold buttons: things players click that are
-# NOT rewards. Buttons never give anything and never track claims.
-#
-# To add a button that opens another menu:
-#
-#     items:
-#       next_page:
-#         slot: 26
-#         material: ARROW
-#         name: "<green>Next Page"
-#         lore:
-#           - "<gray>Open the second menu"
-#         action:
-#           open-menu: menu_2
-#
-# To add a button that closes the menu:
-#
-#     items:
-#       close_button:
-#         slot: 22
-#         material: BARRIER
-#         name: "<red>Close"
-#         action:
-#           close: true
-#
-# To send the player a message (menu stays open unless you also close):
-#
-#     items:
-#       store:
-#         slot: 16
-#         material: EMERALD
-#         name: "<green>Store"
-#         action:
-#           message: "<gray>Shop at <white>https://example.com"
-#           close: true
-#
-# A button with NO action is pure display (for example a live
-# stats readout — %playtime% and friends work in button text):
-#
-#     items:
-#       stats:
-#         slot: 25
-#         material: CLOCK
-#         name: "<white>Your Stats"
-#         lore:
-#           - "<gray>Playtime: <white>%playtime%"
-#
-# Background filler for the empty slots of one menu:
-#
-#     fill:
-#       material: GREEN_STAINED_GLASS_PANE
-#       name: "<white> "
-#       lore: []
-#
-# Rules: button IDs use lowercase letters, numbers and underscores
-# (for example 'next_page', never 'next-page'). Every button needs
-# its own slot, shared with no reward and no other button. The
-# 'open-menu' target must be a menu ID from this file.
-#
-# ------------------------------------------------------------
-# DISPLAY: WRITE THE LORE ONCE
-# ------------------------------------------------------------
-#
-# 'name' and 'lore' directly under 'display:' are shared by all
-# three looks (locked, claimable, claimed). You only set the
-# material per look (plus 'glow: true' where you want shine):
-#
-# display:
-#   name: "<white>30 Minute Reward"
-#   lore:
-#     - "<gray>Requires <white>%required_playtime%</white>"
-#   locked:
-#     material: RED_STAINED_GLASS_PANE
-#   claimable:
-#     material: GRAY_STAINED_GLASS_PANE
-#     glow: true
-#   claimed:
-#     material: LIME_STAINED_GLASS_PANE
-#
-# A single look can still set its own 'lore:' to override
-# the shared one (even an empty list).
-#
-# ------------------------------------------------------------
-# COLORS: LEGACY AND MINIMESSAGE
-# ------------------------------------------------------------
-#
-# Both color systems work everywhere (names, lore, titles,
-# messages), even mixed in one line:
-#
-#   name: "&d&l1 Hour Reward"          legacy (&0-9, &a-f, &k-o, &r)
-#   name: "<green><bold>Reward</green>"  MiniMessage
-#   name: "<gradient:#55ffff:#aa00ff>Reward</gradient>"
-#
-# ------------------------------------------------------------
-# TIME: USE 1h INSTEAD OF SECONDS
-# ------------------------------------------------------------
-#
-#   time: 30s     30 seconds
-#   time: 10m     10 minutes
-#   time: 1h      1 hour
-#   time: 2d      2 days
-#   time: 1w      1 week
-#
-# The old 'required-seconds: 3600' still works. If a reward has
-# both, 'time:' wins.
-#
-# ------------------------------------------------------------
-# SHORT ACTIONS
-# ------------------------------------------------------------
-#
-#   actions:
-#     - command: "addmoney %player% 1000"
-#     - item: "DIAMOND 10"
-#
-# The long form ('- type: item' with material/amount) still works.
-# Order is kept exactly as listed.
-#
-# ------------------------------------------------------------
-# SHORT BUTTON ACTIONS
-# ------------------------------------------------------------
-#
-#   action: next-page        open the next menu in order
-#   action: previous-page    open the previous menu in order
-#   action: close            close the menu
-#   action: open-menu: menu_2
-#
-# ------------------------------------------------------------
-# PLAYER HEADS
-# ------------------------------------------------------------
-#
-#   material: PLAYER_HEAD
-#   head: "%player%"       the viewing player's head
-#   head: "Notch"          a named player's head
-#   head:
-#     texture: "BASE64..." texture value
-#
-# ------------------------------------------------------------
-# SHARED DEFAULTS (less repetition)
-# ------------------------------------------------------------
-#
-#   defaults:
-#     reward:
-#       display:
-#         locked:
-#           material: MAGENTA_CANDLE
-#         claimable:
-#           material: MAGENTA_CANDLE
-#           glow: true
-#         claimed:
-#           material: MAGENTA_CANDLE
-#
-# Anything a reward sets itself always wins. A menu can also have
-# its own 'defaults:' block, which beats the file-level one.
-#
-# ------------------------------------------------------------
-# SOUNDS: ANY MINECRAFT SOUND
-# ------------------------------------------------------------
-#
-# VPlaytime supports Minecraft registered sound keys. You do not
-# need to maintain a list of supported sounds.
-#
-# Simple form (all of these mean the same sound):
-#
-#     sounds:
-#       open: BLOCK_CHEST_OPEN
-#       open: "minecraft:block.chest.open"
-#       open: "BLOCK_CHEST_OPEN"
-#
-# Advanced form with volume (0 or higher) and pitch (above 0
-# up to 2, default 1.0 for both):
-#
-#     sounds:
-#       claim:
-#         sound: "entity.player.levelup"
-#         volume: 1.0
-#         pitch: 1.2
-#
-# Each menu owns four events: open, claim, locked, already-claimed.
-# Unknown sounds warn once in the console (naming the menu) and
-# stay silent in game. Empty ("") means silence.
-#
-# ------------------------------------------------------------
-# COMMON MISTAKES (the reload will reject these safely)
-# ------------------------------------------------------------
-#
-# - Menu IDs must be unique.
-# - Every menu needs its own "order" number.
-# - Reward IDs must be unique inside the same menu.
-# - Slots must be different inside the same menu.
-# - Slots must fit inside the row count (see the diagram below).
-# - 'open-menu:' needs a menu id (an empty value is rejected).
-# - Time is measured in seconds, not minutes.
-# - YAML indentation matters: use spaces, never tabs.
-#
-# ------------------------------------------------------------
-# MENU ID vs NAME vs TITLE
-# ------------------------------------------------------------
-#
-#   ID     long_playtime          used in the file and in commands
-#   name   <aqua>Long Playtime    human-readable label
-#   title  <dark_gray>...         the inventory window title
-#
-# The ID never shows in game. The title is what players see
-# at the top of the open inventory.
+# ============================================================
 
 menus:
-
   main:
-    name: '<white>Playtime Levels 1'
     order: 1
-    title: '         <bold><gradient:#00b09b:#51bd68>Playtime</gradient></bold> <bold><gradient:#5cbf61:#96c93d>Levels</gradient></bold>'
-    rows: 6
+    title: '<white>Playtime Levels'
+    rows: 3
     sounds:
       open: BLOCK_CHEST_OPEN
       claim: ENTITY_PLAYER_LEVELUP
@@ -308,2854 +31,804 @@ menus:
       already-claimed: BLOCK_NOTE_BLOCK_BASS
     rewards:
       level_1:
-        slot: 10
+        slot: 11
         time: 1h
         display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>1</gradient></bold>'
-          lore:
+          name: '<white>Level 1'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>1 Hours of Playtime'
+            - '<gray>Requires <white>1 hour <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$1,000'
             - '<dark_gray>❖ <white>500 XP'
             - '<dark_gray>❖ <white>Raw Iron ×16'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>1 hour <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$1,000'
+            - '<dark_gray>❖ <white>500 XP'
+            - '<dark_gray>❖ <white>Raw Iron ×16'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>1 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$1,000'
-              - '<dark_gray>❖ <white>500 XP'
-              - '<dark_gray>❖ <white>Raw Iron ×16'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>1 hour <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$1,000'
+            - '<dark_gray>❖ <white>500 XP'
+            - '<dark_gray>❖ <white>Raw Iron ×16'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 1000'
-          - command: 'xp give %player% 500'
+          - command: 'xp add %player% 500'
           - item: "RAW_IRON 16"
       level_2:
-        slot: 11
+        slot: 12
         time: 4h
         display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>2</gradient></bold>'
-          lore:
+          name: '<white>Level 2'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>4 Hours of Playtime'
+            - '<gray>Requires <white>4 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$2,000'
             - '<dark_gray>❖ <white>750 XP'
             - '<dark_gray>❖ <white>10 Shards'
             - '<dark_gray>❖ <white>Coal ×24'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>4 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$2,000'
+            - '<dark_gray>❖ <white>750 XP'
+            - '<dark_gray>❖ <white>10 Shards'
+            - '<dark_gray>❖ <white>Coal ×24'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>4 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$2,000'
-              - '<dark_gray>❖ <white>750 XP'
-              - '<dark_gray>❖ <white>10 Shards'
-              - '<dark_gray>❖ <white>Coal ×24'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>4 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$2,000'
+            - '<dark_gray>❖ <white>750 XP'
+            - '<dark_gray>❖ <white>10 Shards'
+            - '<dark_gray>❖ <white>Coal ×24'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 2000'
-          - command: 'xp give %player% 750'
+          - command: 'xp add %player% 750'
           - command: 'points give %player% 10'
           - item: "COAL 24"
       level_3:
-        slot: 12
+        slot: 13
         time: 8h
         display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>3</gradient></bold>'
-          lore:
+          name: '<white>Level 3'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>8 Hours of Playtime'
+            - '<gray>Requires <white>8 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$3,500'
             - '<dark_gray>❖ <white>1,000 XP'
             - '<dark_gray>❖ <white>Raw Gold ×12'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>8 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$3,500'
+            - '<dark_gray>❖ <white>1,000 XP'
+            - '<dark_gray>❖ <white>Raw Gold ×12'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>8 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$3,500'
-              - '<dark_gray>❖ <white>1,000 XP'
-              - '<dark_gray>❖ <white>Raw Gold ×12'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>8 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$3,500'
+            - '<dark_gray>❖ <white>1,000 XP'
+            - '<dark_gray>❖ <white>Raw Gold ×12'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 3500'
-          - command: 'xp give %player% 1000'
+          - command: 'xp add %player% 1000'
           - item: "RAW_GOLD 12"
       level_4:
-        slot: 13
+        slot: 14
         time: 12h
         display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>4</gradient></bold>'
-          lore:
+          name: '<white>Level 4'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>12 Hours of Playtime'
+            - '<gray>Requires <white>12 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$5,000'
             - '<dark_gray>❖ <white>1,250 XP'
             - '<dark_gray>❖ <white>15 Shards'
             - '<dark_gray>❖ <white>Iron Ingot ×12'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>12 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$5,000'
+            - '<dark_gray>❖ <white>1,250 XP'
+            - '<dark_gray>❖ <white>15 Shards'
+            - '<dark_gray>❖ <white>Iron Ingot ×12'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>12 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$5,000'
-              - '<dark_gray>❖ <white>1,250 XP'
-              - '<dark_gray>❖ <white>15 Shards'
-              - '<dark_gray>❖ <white>Iron Ingot ×12'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>12 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$5,000'
+            - '<dark_gray>❖ <white>1,250 XP'
+            - '<dark_gray>❖ <white>15 Shards'
+            - '<dark_gray>❖ <white>Iron Ingot ×12'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 5000'
-          - command: 'xp give %player% 1250'
+          - command: 'xp add %player% 1250'
           - command: 'points give %player% 15'
           - item: "IRON_INGOT 12"
       level_5:
-        slot: 14
+        slot: 15
         time: 18h
         display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>5</gradient></bold>'
-          lore:
+          name: '<white>Level 5'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>18 Hours of Playtime'
+            - '<gray>Requires <white>18 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$7,000'
             - '<dark_gray>❖ <white>1,500 XP'
             - '<dark_gray>❖ <white>Copper Block ×8'
             - '<dark_gray>❖ <white>1x Crate Key'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>18 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$7,000'
+            - '<dark_gray>❖ <white>1,500 XP'
+            - '<dark_gray>❖ <white>Copper Block ×8'
+            - '<dark_gray>❖ <white>1x Crate Key'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>18 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$7,000'
-              - '<dark_gray>❖ <white>1,500 XP'
-              - '<dark_gray>❖ <white>Copper Block ×8'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>18 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$7,000'
+            - '<dark_gray>❖ <white>1,500 XP'
+            - '<dark_gray>❖ <white>Copper Block ×8'
+            - '<dark_gray>❖ <white>1x Crate Key'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 7000'
-          - command: 'xp give %player% 1500'
+          - command: 'xp add %player% 1500'
           - item: "COPPER_BLOCK 8"
           - command: 'cc give physical Common 1 %player%'
+    items:
+      stats:
+        slot: 22
+        material: CLOCK
+        name: '<white>Your playtime'
+        lore:
+        - ''
+        - '<gray>%playtime_hours% hours <dark_gray>(%playtime_minutes% min)'
+      next:
+        slot: 26
+        material: ARROW
+        name: '<white>Next page'
+        lore:
+        - '<gray>More levels ahead'
+        action: next-page
+  menu_2:
+    order: 2
+    title: '<white>Playtime Levels 2'
+    rows: 3
+    sounds:
+      open: BLOCK_CHEST_OPEN
+      claim: ENTITY_PLAYER_LEVELUP
+      locked: BLOCK_NOTE_BLOCK_BASS
+      already-claimed: BLOCK_NOTE_BLOCK_BASS
+    rewards:
       level_6:
-        slot: 19
+        slot: 11
         time: 26h
         display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>6</gradient></bold>'
-          lore:
+          name: '<white>Level 6'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>26 Hours of Playtime'
+            - '<gray>Requires <white>26 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$10,000'
             - '<dark_gray>❖ <white>2,000 XP'
             - '<dark_gray>❖ <white>20 Shards'
             - '<dark_gray>❖ <white>Gold Ingot ×8'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>26 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$10,000'
+            - '<dark_gray>❖ <white>2,000 XP'
+            - '<dark_gray>❖ <white>20 Shards'
+            - '<dark_gray>❖ <white>Gold Ingot ×8'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>26 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$10,000'
-              - '<dark_gray>❖ <white>2,000 XP'
-              - '<dark_gray>❖ <white>20 Shards'
-              - '<dark_gray>❖ <white>Gold Ingot ×8'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>26 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$10,000'
+            - '<dark_gray>❖ <white>2,000 XP'
+            - '<dark_gray>❖ <white>20 Shards'
+            - '<dark_gray>❖ <white>Gold Ingot ×8'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 10000'
-          - command: 'xp give %player% 2000'
+          - command: 'xp add %player% 2000'
           - command: 'points give %player% 20'
           - item: "GOLD_INGOT 8"
       level_7:
-        slot: 20
+        slot: 12
         time: 34h
         display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>7</gradient></bold>'
-          lore:
+          name: '<white>Level 7'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>34 Hours of Playtime'
+            - '<gray>Requires <white>34 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$13,500'
             - '<dark_gray>❖ <white>2,500 XP'
             - '<dark_gray>❖ <white>Emerald ×6'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>34 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$13,500'
+            - '<dark_gray>❖ <white>2,500 XP'
+            - '<dark_gray>❖ <white>Emerald ×6'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>34 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$13,500'
-              - '<dark_gray>❖ <white>2,500 XP'
-              - '<dark_gray>❖ <white>Emerald ×6'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>34 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$13,500'
+            - '<dark_gray>❖ <white>2,500 XP'
+            - '<dark_gray>❖ <white>Emerald ×6'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 13500'
-          - command: 'xp give %player% 2500'
+          - command: 'xp add %player% 2500'
           - item: "EMERALD 6"
       level_8:
-        slot: 21
+        slot: 13
         time: 42h
         display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>8</gradient></bold>'
-          lore:
+          name: '<white>Level 8'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>42 Hours of Playtime'
+            - '<gray>Requires <white>42 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$17,000'
             - '<dark_gray>❖ <white>3,000 XP'
             - '<dark_gray>❖ <white>25 Shards'
             - '<dark_gray>❖ <white>Iron Block ×4'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>42 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$17,000'
+            - '<dark_gray>❖ <white>3,000 XP'
+            - '<dark_gray>❖ <white>25 Shards'
+            - '<dark_gray>❖ <white>Iron Block ×4'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>42 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$17,000'
-              - '<dark_gray>❖ <white>3,000 XP'
-              - '<dark_gray>❖ <white>25 Shards'
-              - '<dark_gray>❖ <white>Iron Block ×4'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>42 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$17,000'
+            - '<dark_gray>❖ <white>3,000 XP'
+            - '<dark_gray>❖ <white>25 Shards'
+            - '<dark_gray>❖ <white>Iron Block ×4'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 17000'
-          - command: 'xp give %player% 3000'
+          - command: 'xp add %player% 3000'
           - command: 'points give %player% 25'
           - item: "IRON_BLOCK 4"
       level_9:
-        slot: 22
+        slot: 14
         time: 52h
         display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>9</gradient></bold>'
-          lore:
+          name: '<white>Level 9'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>52 Hours of Playtime'
+            - '<gray>Requires <white>52 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$21,000'
             - '<dark_gray>❖ <white>3,500 XP'
             - '<dark_gray>❖ <white>Diamond ×4'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>52 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$21,000'
+            - '<dark_gray>❖ <white>3,500 XP'
+            - '<dark_gray>❖ <white>Diamond ×4'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>52 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$21,000'
-              - '<dark_gray>❖ <white>3,500 XP'
-              - '<dark_gray>❖ <white>Diamond ×4'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>52 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$21,000'
+            - '<dark_gray>❖ <white>3,500 XP'
+            - '<dark_gray>❖ <white>Diamond ×4'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 21000'
-          - command: 'xp give %player% 3500'
+          - command: 'xp add %player% 3500'
           - item: "DIAMOND 4"
       level_10:
-        slot: 23
+        slot: 15
         time: 64h
         display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>10</gradient></bold>'
-          lore:
+          name: '<white>Level 10'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>64 Hours of Playtime'
+            - '<gray>Requires <white>64 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$26,000'
             - '<dark_gray>❖ <white>4,000 XP'
             - '<dark_gray>❖ <white>30 Shards'
             - '<dark_gray>❖ <white>Diamond ×8'
             - '<dark_gray>❖ <white>1x Crate Key'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>64 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$26,000'
+            - '<dark_gray>❖ <white>4,000 XP'
+            - '<dark_gray>❖ <white>30 Shards'
+            - '<dark_gray>❖ <white>Diamond ×8'
+            - '<dark_gray>❖ <white>1x Crate Key'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>64 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$26,000'
-              - '<dark_gray>❖ <white>4,000 XP'
-              - '<dark_gray>❖ <white>30 Shards'
-              - '<dark_gray>❖ <white>Diamond ×8'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>64 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$26,000'
+            - '<dark_gray>❖ <white>4,000 XP'
+            - '<dark_gray>❖ <white>30 Shards'
+            - '<dark_gray>❖ <white>Diamond ×8'
+            - '<dark_gray>❖ <white>1x Crate Key'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 26000'
-          - command: 'xp give %player% 4000'
+          - command: 'xp add %player% 4000'
           - command: 'points give %player% 30'
           - item: "DIAMOND 8"
           - command: 'cc give physical Common 1 %player%'
+    items:
+      prev:
+        slot: 18
+        material: ARROW
+        name: '<white>Previous page'
+        lore:
+        - '<gray>Back to earlier levels'
+        action: previous-page
+      stats:
+        slot: 22
+        material: CLOCK
+        name: '<white>Your playtime'
+        lore:
+        - ''
+        - '<gray>%playtime_hours% hours <dark_gray>(%playtime_minutes% min)'
+      next:
+        slot: 26
+        material: ARROW
+        name: '<white>Next page'
+        lore:
+        - '<gray>More levels ahead'
+        action: next-page
+  menu_3:
+    order: 3
+    title: '<white>Playtime Levels 3'
+    rows: 3
+    sounds:
+      open: BLOCK_CHEST_OPEN
+      claim: ENTITY_PLAYER_LEVELUP
+      locked: BLOCK_NOTE_BLOCK_BASS
+      already-claimed: BLOCK_NOTE_BLOCK_BASS
+    rewards:
       level_11:
-        slot: 28
+        slot: 11
         time: 72h
         display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>11</gradient></bold>'
-          lore:
+          name: '<white>Level 11'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>72 Hours of Playtime'
+            - '<gray>Requires <white>72 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$31,000'
             - '<dark_gray>❖ <white>4,500 XP'
             - '<dark_gray>❖ <white>Obsidian ×16'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>72 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$31,000'
+            - '<dark_gray>❖ <white>4,500 XP'
+            - '<dark_gray>❖ <white>Obsidian ×16'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>72 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$31,000'
-              - '<dark_gray>❖ <white>4,500 XP'
-              - '<dark_gray>❖ <white>Obsidian ×16'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>72 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$31,000'
+            - '<dark_gray>❖ <white>4,500 XP'
+            - '<dark_gray>❖ <white>Obsidian ×16'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 31000'
-          - command: 'xp give %player% 4500'
+          - command: 'xp add %player% 4500'
           - item: "OBSIDIAN 16"
       level_12:
-        slot: 29
+        slot: 12
         time: 82h
         display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>12</gradient></bold>'
-          lore:
+          name: '<white>Level 12'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>82 Hours of Playtime'
+            - '<gray>Requires <white>82 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$36,000'
             - '<dark_gray>❖ <white>5,000 XP'
             - '<dark_gray>❖ <white>35 Shards'
             - '<dark_gray>❖ <white>Diamond ×10'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>82 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$36,000'
+            - '<dark_gray>❖ <white>5,000 XP'
+            - '<dark_gray>❖ <white>35 Shards'
+            - '<dark_gray>❖ <white>Diamond ×10'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>82 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$36,000'
-              - '<dark_gray>❖ <white>5,000 XP'
-              - '<dark_gray>❖ <white>35 Shards'
-              - '<dark_gray>❖ <white>Diamond ×10'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>82 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$36,000'
+            - '<dark_gray>❖ <white>5,000 XP'
+            - '<dark_gray>❖ <white>35 Shards'
+            - '<dark_gray>❖ <white>Diamond ×10'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 36000'
-          - command: 'xp give %player% 5000'
+          - command: 'xp add %player% 5000'
           - command: 'points give %player% 35'
           - item: "DIAMOND 10"
       level_13:
-        slot: 30
+        slot: 13
         time: 92h
         display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>13</gradient></bold>'
-          lore:
+          name: '<white>Level 13'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>92 Hours of Playtime'
+            - '<gray>Requires <white>92 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$42,000'
             - '<dark_gray>❖ <white>5,500 XP'
             - '<dark_gray>❖ <white>Golden Apple ×4'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>92 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$42,000'
+            - '<dark_gray>❖ <white>5,500 XP'
+            - '<dark_gray>❖ <white>Golden Apple ×4'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>92 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$42,000'
-              - '<dark_gray>❖ <white>5,500 XP'
-              - '<dark_gray>❖ <white>Golden Apple ×4'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>92 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$42,000'
+            - '<dark_gray>❖ <white>5,500 XP'
+            - '<dark_gray>❖ <white>Golden Apple ×4'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 42000'
-          - command: 'xp give %player% 5500'
+          - command: 'xp add %player% 5500'
           - item: "GOLDEN_APPLE 4"
       level_14:
-        slot: 31
+        slot: 14
         time: 102h
         display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>14</gradient></bold>'
-          lore:
+          name: '<white>Level 14'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>102 Hours of Playtime'
+            - '<gray>Requires <white>102 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$48,000'
             - '<dark_gray>❖ <white>6,000 XP'
             - '<dark_gray>❖ <white>40 Shards'
             - '<dark_gray>❖ <white>Emerald Block ×2'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>102 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$48,000'
+            - '<dark_gray>❖ <white>6,000 XP'
+            - '<dark_gray>❖ <white>40 Shards'
+            - '<dark_gray>❖ <white>Emerald Block ×2'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>102 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$48,000'
-              - '<dark_gray>❖ <white>6,000 XP'
-              - '<dark_gray>❖ <white>40 Shards'
-              - '<dark_gray>❖ <white>Emerald Block ×2'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>102 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$48,000'
+            - '<dark_gray>❖ <white>6,000 XP'
+            - '<dark_gray>❖ <white>40 Shards'
+            - '<dark_gray>❖ <white>Emerald Block ×2'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 48000'
-          - command: 'xp give %player% 6000'
+          - command: 'xp add %player% 6000'
           - command: 'points give %player% 40'
           - item: "EMERALD_BLOCK 2"
       level_15:
-        slot: 32
+        slot: 15
         time: 112h
         display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>15</gradient></bold>'
-          lore:
+          name: '<white>Level 15'
+          locked:
+            material: RED_CANDLE
+            lore:
             - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>112 Hours of Playtime'
+            - '<gray>Requires <white>112 hours <gray>of playtime'
             - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
+            - '<gray>Rewards:'
             - '<dark_gray>❖ <white>$55,000'
             - '<dark_gray>❖ <white>6,500 XP'
             - '<dark_gray>❖ <white>Enchanted Book ×3'
             - '<dark_gray>❖ <white>1x Crate Key'
             - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
+            - '<red>Locked'
           claimable:
-            material: YELLOW_CANDLE
-            glow: true
+            material: ORANGE_CANDLE
+            lore:
+            - ''
+            - '<gray>Requires <white>112 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$55,000'
+            - '<dark_gray>❖ <white>6,500 XP'
+            - '<dark_gray>❖ <white>Enchanted Book ×3'
+            - '<dark_gray>❖ <white>1x Crate Key'
+            - ''
+            - '<yellow>Click to claim!'
           claimed:
             material: LIME_CANDLE
             glow: true
             lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>112 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$55,000'
-              - '<dark_gray>❖ <white>6,500 XP'
-              - '<dark_gray>❖ <white>Enchanted Book ×3'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
+            - ''
+            - '<gray>Requires <white>112 hours <gray>of playtime'
+            - ''
+            - '<gray>Rewards:'
+            - '<dark_gray>❖ <white>$55,000'
+            - '<dark_gray>❖ <white>6,500 XP'
+            - '<dark_gray>❖ <white>Enchanted Book ×3'
+            - '<dark_gray>❖ <white>1x Crate Key'
+            - ''
+            - '<green>✓ Claimed'
         actions:
           - command: 'addmoney %player% 55000'
-          - command: 'xp give %player% 6500'
+          - command: 'xp add %player% 6500'
           - item: "ENCHANTED_BOOK 3"
           - command: 'cc give physical Common 1 %player%'
-    fill:
-      material: GREEN_STAINED_GLASS_PANE
-      name: '<white> '
-      lore: []
     items:
-      close:
-        slot: 49
-        material: BARRIER
-        name: '<bold><gradient:#93291e:#c0252c>Close</gradient></bold> <bold><gradient:#cb2430:#ed213a>Menu</gradient></bold>'
-        lore:
-          - ''
-          - '<white>Click here to'
-          - '<white>close this menu!'
-        action: close
-      store:
-        slot: 16
-        material: EMERALD
-        name: '<bold><gradient:#ff5f6d:#ff9a6f>Helpfufinof</gradient></bold><#ffa070><italic>r<bold><gradient:#ffa670:#ffc371>mation</gradient></bold>'
-        lore:
-          - ''
-          - '<white>Playtime levels are achievable tiers where'
-          - '<white>you can get rewards by playing and voting!'
-          - '<white>the more you play and vote for us, the'
-          - '<white>more in-game rewards you will receive!'
-          - ''
-          - '<bold><gradient:#ff0000:#e40000>Want</gradient></bold> <bold><gradient:#db0000:#d20000>to</gradient></bold> <bold><gradient:#ca0000:#b00000>skip</gradient></bold> <bold><gradient:#a70000:#760000>leveles?</gradient></bold>'
-          - '<white>Purchase an in-game rank or coins'
-          - '<white>to purchase crate keys & cosmetics!'
-          - ''
-          - '<bold><gradient:#ff5f6d:#ff5f6d>C</gradient></bold>LICK HERE TO'
-          - '<bold><gradient:#ff5f6d:#ff5f6d>C</gradient></bold>HECK OUT THE STORE'
-        action:
-          message: '<bold><gradient:#ff5f6d:#ff5f6d>S</gradient></bold>tore: <white>https://store.lifesteal.net'
-          close: true
-      stats:
-        slot: 25
-        material: CLOCK
-        name: '<bold><gradient:#c02425:#cb4b29>Your</gradient></bold> <bold><gradient:#cf572a:#f0cb35>Statistics</gradient></bold>'
-        lore:
-          - ''
-          - '<dark_gray>❖ <white>Current playtime: <yellow>%playtime_hours% <white>hours'
-      next:
-        slot: 50
-        material: ARROW
-        name: '<bold><gradient:#1ECB02:#1ECB02>N</gradient></bold>ext Page <dark_gray>[<gray>→<dark_gray>]'
-        lore:
-          - ''
-          - '<white>Head to the next page to'
-          - '<white>obtain more rewards!'
-        action: next-page
-
-  menu_2:
-    name: '<white>Playtime Levels 2'
-    order: 2
-    title: '         <bold><gradient:#00b09b:#51bd68>Playtime</gradient></bold> <bold><gradient:#5cbf61:#96c93d>Levels</gradient></bold>'
-    rows: 6
-    sounds:
-      open: BLOCK_CHEST_OPEN
-      claim: ENTITY_PLAYER_LEVELUP
-      locked: BLOCK_NOTE_BLOCK_BASS
-      already-claimed: BLOCK_NOTE_BLOCK_BASS
-    rewards:
-      level_16:
-        slot: 10
-        time: 122h
-        display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>16</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>122 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$62,000'
-            - '<dark_gray>❖ <white>7,000 XP'
-            - '<dark_gray>❖ <white>45 Shards'
-            - '<dark_gray>❖ <white>Diamond Block ×2'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>122 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$62,000'
-              - '<dark_gray>❖ <white>7,000 XP'
-              - '<dark_gray>❖ <white>45 Shards'
-              - '<dark_gray>❖ <white>Diamond Block ×2'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 62000'
-          - command: 'xp give %player% 7000'
-          - command: 'points give %player% 45'
-          - item: "DIAMOND_BLOCK 2"
-      level_17:
-        slot: 11
-        time: 132h
-        display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>17</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>132 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$70,000'
-            - '<dark_gray>❖ <white>7,500 XP'
-            - '<dark_gray>❖ <white>Ender Pearl ×32'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>132 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$70,000'
-              - '<dark_gray>❖ <white>7,500 XP'
-              - '<dark_gray>❖ <white>Ender Pearl ×32'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 70000'
-          - command: 'xp give %player% 7500'
-          - item: "ENDER_PEARL 32"
-      level_18:
-        slot: 12
-        time: 142h
-        display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>18</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>142 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$78,000'
-            - '<dark_gray>❖ <white>8,000 XP'
-            - '<dark_gray>❖ <white>50 Shards'
-            - '<dark_gray>❖ <white>Gold Block ×3'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>142 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$78,000'
-              - '<dark_gray>❖ <white>8,000 XP'
-              - '<dark_gray>❖ <white>50 Shards'
-              - '<dark_gray>❖ <white>Gold Block ×3'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 78000'
-          - command: 'xp give %player% 8000'
-          - command: 'points give %player% 50'
-          - item: "GOLD_BLOCK 3"
-      level_19:
-        slot: 13
-        time: 150h
-        display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>19</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>150 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$87,000'
-            - '<dark_gray>❖ <white>8,500 XP'
-            - '<dark_gray>❖ <white>Golden Apple ×8'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>150 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$87,000'
-              - '<dark_gray>❖ <white>8,500 XP'
-              - '<dark_gray>❖ <white>Golden Apple ×8'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 87000'
-          - command: 'xp give %player% 8500'
-          - item: "GOLDEN_APPLE 8"
-      level_20:
-        slot: 14
-        time: 160h
-        display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>20</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>160 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$96,000'
-            - '<dark_gray>❖ <white>9,000 XP'
-            - '<dark_gray>❖ <white>55 Shards'
-            - '<dark_gray>❖ <white>Netherite Scrap ×2'
-            - '<dark_gray>❖ <white>1x Crate Key'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>160 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$96,000'
-              - '<dark_gray>❖ <white>9,000 XP'
-              - '<dark_gray>❖ <white>55 Shards'
-              - '<dark_gray>❖ <white>Netherite Scrap ×2'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 96000'
-          - command: 'xp give %player% 9000'
-          - command: 'points give %player% 55'
-          - item: "NETHERITE_SCRAP 2"
-          - command: 'cc give physical Common 1 %player%'
-      level_21:
-        slot: 19
-        time: 170h
-        display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>21</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>170 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$105,000'
-            - '<dark_gray>❖ <white>10,000 XP'
-            - '<dark_gray>❖ <white>Diamond Block ×4'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>170 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$105,000'
-              - '<dark_gray>❖ <white>10,000 XP'
-              - '<dark_gray>❖ <white>Diamond Block ×4'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 105000'
-          - command: 'xp give %player% 10000'
-          - item: "DIAMOND_BLOCK 4"
-      level_22:
-        slot: 20
-        time: 180h
-        display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>22</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>180 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$115,000'
-            - '<dark_gray>❖ <white>11,000 XP'
-            - '<dark_gray>❖ <white>60 Shards'
-            - '<dark_gray>❖ <white>Totem Of Undying ×1'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>180 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$115,000'
-              - '<dark_gray>❖ <white>11,000 XP'
-              - '<dark_gray>❖ <white>60 Shards'
-              - '<dark_gray>❖ <white>Totem Of Undying ×1'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 115000'
-          - command: 'xp give %player% 11000'
-          - command: 'points give %player% 60'
-          - item: "TOTEM_OF_UNDYING 1"
-      level_23:
-        slot: 21
-        time: 190h
-        display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>23</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>190 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$125,000'
-            - '<dark_gray>❖ <white>12,000 XP'
-            - '<dark_gray>❖ <white>Ancient Debris ×3'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>190 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$125,000'
-              - '<dark_gray>❖ <white>12,000 XP'
-              - '<dark_gray>❖ <white>Ancient Debris ×3'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 125000'
-          - command: 'xp give %player% 12000'
-          - item: "ANCIENT_DEBRIS 3"
-      level_24:
-        slot: 22
-        time: 200h
-        display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>24</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>200 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$135,000'
-            - '<dark_gray>❖ <white>13,000 XP'
-            - '<dark_gray>❖ <white>65 Shards'
-            - '<dark_gray>❖ <white>End Crystal ×8'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>200 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$135,000'
-              - '<dark_gray>❖ <white>13,000 XP'
-              - '<dark_gray>❖ <white>65 Shards'
-              - '<dark_gray>❖ <white>End Crystal ×8'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 135000'
-          - command: 'xp give %player% 13000'
-          - command: 'points give %player% 65'
-          - item: "END_CRYSTAL 8"
-      level_25:
-        slot: 23
-        time: 215h
-        display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>25</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>215 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$145,000'
-            - '<dark_gray>❖ <white>14,000 XP'
-            - '<dark_gray>❖ <white>Shulker Box ×1'
-            - '<dark_gray>❖ <white>1x Crate Key'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>215 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$145,000'
-              - '<dark_gray>❖ <white>14,000 XP'
-              - '<dark_gray>❖ <white>Shulker Box ×1'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 145000'
-          - command: 'xp give %player% 14000'
-          - item: "SHULKER_BOX 1"
-          - command: 'cc give physical Common 1 %player%'
-      level_26:
-        slot: 28
-        time: 230h
-        display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>26</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>230 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$155,000'
-            - '<dark_gray>❖ <white>15,000 XP'
-            - '<dark_gray>❖ <white>70 Shards'
-            - '<dark_gray>❖ <white>Enchanted Golden Apple ×1'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>230 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$155,000'
-              - '<dark_gray>❖ <white>15,000 XP'
-              - '<dark_gray>❖ <white>70 Shards'
-              - '<dark_gray>❖ <white>Enchanted Golden Apple ×1'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 155000'
-          - command: 'xp give %player% 15000'
-          - command: 'points give %player% 70'
-          - item: "ENCHANTED_GOLDEN_APPLE 1"
-      level_27:
-        slot: 29
-        time: 245h
-        display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>27</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>245 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$165,000'
-            - '<dark_gray>❖ <white>16,000 XP'
-            - '<dark_gray>❖ <white>Netherite Ingot ×2'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>245 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$165,000'
-              - '<dark_gray>❖ <white>16,000 XP'
-              - '<dark_gray>❖ <white>Netherite Ingot ×2'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 165000'
-          - command: 'xp give %player% 16000'
-          - item: "NETHERITE_INGOT 2"
-      level_28:
-        slot: 30
-        time: 260h
-        display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>28</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>260 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$175,000'
-            - '<dark_gray>❖ <white>17,000 XP'
-            - '<dark_gray>❖ <white>75 Shards'
-            - '<dark_gray>❖ <white>Totem Of Undying ×2'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>260 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$175,000'
-              - '<dark_gray>❖ <white>17,000 XP'
-              - '<dark_gray>❖ <white>75 Shards'
-              - '<dark_gray>❖ <white>Totem Of Undying ×2'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 175000'
-          - command: 'xp give %player% 17000'
-          - command: 'points give %player% 75'
-          - item: "TOTEM_OF_UNDYING 2"
-      level_29:
-        slot: 31
-        time: 280h
-        display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>29</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>280 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$190,000'
-            - '<dark_gray>❖ <white>18,000 XP'
-            - '<dark_gray>❖ <white>Diamond Block ×6'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>280 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$190,000'
-              - '<dark_gray>❖ <white>18,000 XP'
-              - '<dark_gray>❖ <white>Diamond Block ×6'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 190000'
-          - command: 'xp give %player% 18000'
-          - item: "DIAMOND_BLOCK 6"
-      level_30:
-        slot: 32
-        time: 300h
-        display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>30</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>300 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$205,000'
-            - '<dark_gray>❖ <white>20,000 XP'
-            - '<dark_gray>❖ <white>80 Shards'
-            - '<dark_gray>❖ <white>Netherite Ingot ×4'
-            - '<dark_gray>❖ <white>1x Crate Key'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>300 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$205,000'
-              - '<dark_gray>❖ <white>20,000 XP'
-              - '<dark_gray>❖ <white>80 Shards'
-              - '<dark_gray>❖ <white>Netherite Ingot ×4'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 205000'
-          - command: 'xp give %player% 20000'
-          - command: 'points give %player% 80'
-          - item: "NETHERITE_INGOT 4"
-          - command: 'cc give physical Common 1 %player%'
-    fill:
-      material: GREEN_STAINED_GLASS_PANE
-      name: '<white> '
-      lore: []
-    items:
-      close:
-        slot: 49
-        material: BARRIER
-        name: '<bold><gradient:#93291e:#c0252c>Close</gradient></bold> <bold><gradient:#cb2430:#ed213a>Menu</gradient></bold>'
-        lore:
-          - ''
-          - '<white>Click here to'
-          - '<white>close this menu!'
-        action: close
-      store:
-        slot: 16
-        material: EMERALD
-        name: '<bold><gradient:#ff5f6d:#ff9a6f>Helpfufinof</gradient></bold><#ffa070><italic>r<bold><gradient:#ffa670:#ffc371>mation</gradient></bold>'
-        lore:
-          - ''
-          - '<white>Playtime levels are achievable tiers where'
-          - '<white>you can get rewards by playing and voting!'
-          - '<white>the more you play and vote for us, the'
-          - '<white>more in-game rewards you will receive!'
-          - ''
-          - '<bold><gradient:#ff0000:#e40000>Want</gradient></bold> <bold><gradient:#db0000:#d20000>to</gradient></bold> <bold><gradient:#ca0000:#b00000>skip</gradient></bold> <bold><gradient:#a70000:#760000>leveles?</gradient></bold>'
-          - '<white>Purchase an in-game rank or coins'
-          - '<white>to purchase crate keys & cosmetics!'
-          - ''
-          - '<bold><gradient:#ff5f6d:#ff5f6d>C</gradient></bold>LICK HERE TO'
-          - '<bold><gradient:#ff5f6d:#ff5f6d>C</gradient></bold>HECK OUT THE STORE'
-        action:
-          message: '<bold><gradient:#ff5f6d:#ff5f6d>S</gradient></bold>tore: <white>https://store.lifesteal.net'
-          close: true
-      stats:
-        slot: 25
-        material: CLOCK
-        name: '<bold><gradient:#c02425:#cb4b29>Your</gradient></bold> <bold><gradient:#cf572a:#f0cb35>Statistics</gradient></bold>'
-        lore:
-          - ''
-          - '<dark_gray>❖ <white>Current playtime: <yellow>%playtime_hours% <white>hours'
-      next:
-        slot: 50
-        material: ARROW
-        name: '<bold><gradient:#1ECB02:#1ECB02>N</gradient></bold>ext Page <dark_gray>[<gray>→<dark_gray>]'
-        lore:
-          - ''
-          - '<white>Head to the next page to'
-          - '<white>obtain more rewards!'
-        action: next-page
       prev:
-        slot: 48
+        slot: 18
         material: ARROW
-        name: '<bold><gradient:#FF3030:#FF3030>P</gradient></bold>revious Page <dark_gray>[<gray>←<dark_gray>]'
+        name: '<white>Previous page'
         lore:
-          - ''
-          - '<white>Head to the previous page to'
-          - '<white>obtain more rewards!'
+        - '<gray>Back to earlier levels'
         action: previous-page
-
-  menu_3:
-    name: '<white>Playtime Levels 3'
-    order: 3
-    title: '         <bold><gradient:#00b09b:#51bd68>Playtime</gradient></bold> <bold><gradient:#5cbf61:#96c93d>Levels</gradient></bold>'
-    rows: 6
-    sounds:
-      open: BLOCK_CHEST_OPEN
-      claim: ENTITY_PLAYER_LEVELUP
-      locked: BLOCK_NOTE_BLOCK_BASS
-      already-claimed: BLOCK_NOTE_BLOCK_BASS
-    rewards:
-      level_31:
-        slot: 10
-        time: 315h
-        display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>31</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>315 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$220,000'
-            - '<dark_gray>❖ <white>22,000 XP'
-            - '<dark_gray>❖ <white>Shulker Box ×2'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>315 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$220,000'
-              - '<dark_gray>❖ <white>22,000 XP'
-              - '<dark_gray>❖ <white>Shulker Box ×2'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 220000'
-          - command: 'xp give %player% 22000'
-          - item: "SHULKER_BOX 2"
-      level_32:
-        slot: 11
-        time: 330h
-        display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>32</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>330 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$235,000'
-            - '<dark_gray>❖ <white>24,000 XP'
-            - '<dark_gray>❖ <white>85 Shards'
-            - '<dark_gray>❖ <white>Netherite Ingot ×6'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>330 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$235,000'
-              - '<dark_gray>❖ <white>24,000 XP'
-              - '<dark_gray>❖ <white>85 Shards'
-              - '<dark_gray>❖ <white>Netherite Ingot ×6'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 235000'
-          - command: 'xp give %player% 24000'
-          - command: 'points give %player% 85'
-          - item: "NETHERITE_INGOT 6"
-      level_33:
-        slot: 12
-        time: 345h
-        display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>33</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>345 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$250,000'
-            - '<dark_gray>❖ <white>26,000 XP'
-            - '<dark_gray>❖ <white>Enchanted Golden Apple ×2'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>345 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$250,000'
-              - '<dark_gray>❖ <white>26,000 XP'
-              - '<dark_gray>❖ <white>Enchanted Golden Apple ×2'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 250000'
-          - command: 'xp give %player% 26000'
-          - item: "ENCHANTED_GOLDEN_APPLE 2"
-      level_34:
-        slot: 13
-        time: 360h
-        display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>34</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>360 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$265,000'
-            - '<dark_gray>❖ <white>28,000 XP'
-            - '<dark_gray>❖ <white>90 Shards'
-            - '<dark_gray>❖ <white>Nether Star ×3'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>360 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$265,000'
-              - '<dark_gray>❖ <white>28,000 XP'
-              - '<dark_gray>❖ <white>90 Shards'
-              - '<dark_gray>❖ <white>Nether Star ×3'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 265000'
-          - command: 'xp give %player% 28000'
-          - command: 'points give %player% 90'
-          - item: "NETHER_STAR 3"
-      level_35:
-        slot: 14
-        time: 375h
-        display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>35</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>375 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$280,000'
-            - '<dark_gray>❖ <white>30,000 XP'
-            - '<dark_gray>❖ <white>Totem Of Undying ×3'
-            - '<dark_gray>❖ <white>1x Crate Key'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>375 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$280,000'
-              - '<dark_gray>❖ <white>30,000 XP'
-              - '<dark_gray>❖ <white>Totem Of Undying ×3'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 280000'
-          - command: 'xp give %player% 30000'
-          - item: "TOTEM_OF_UNDYING 3"
-          - command: 'cc give physical Common 1 %player%'
-      level_36:
-        slot: 19
-        time: 390h
-        display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>36</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>390 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$300,000'
-            - '<dark_gray>❖ <white>32,000 XP'
-            - '<dark_gray>❖ <white>95 Shards'
-            - '<dark_gray>❖ <white>Netherite Block ×1'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>390 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$300,000'
-              - '<dark_gray>❖ <white>32,000 XP'
-              - '<dark_gray>❖ <white>95 Shards'
-              - '<dark_gray>❖ <white>Netherite Block ×1'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 300000'
-          - command: 'xp give %player% 32000'
-          - command: 'points give %player% 95'
-          - item: "NETHERITE_BLOCK 1"
-      level_37:
-        slot: 20
-        time: 405h
-        display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>37</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>405 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$320,000'
-            - '<dark_gray>❖ <white>34,000 XP'
-            - '<dark_gray>❖ <white>Diamond Block ×10'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>405 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$320,000'
-              - '<dark_gray>❖ <white>34,000 XP'
-              - '<dark_gray>❖ <white>Diamond Block ×10'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 320000'
-          - command: 'xp give %player% 34000'
-          - item: "DIAMOND_BLOCK 10"
-      level_38:
-        slot: 21
-        time: 420h
-        display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>38</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>420 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$340,000'
-            - '<dark_gray>❖ <white>36,000 XP'
-            - '<dark_gray>❖ <white>100 Shards'
-            - '<dark_gray>❖ <white>Shulker Box ×3'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>420 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$340,000'
-              - '<dark_gray>❖ <white>36,000 XP'
-              - '<dark_gray>❖ <white>100 Shards'
-              - '<dark_gray>❖ <white>Shulker Box ×3'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 340000'
-          - command: 'xp give %player% 36000'
-          - command: 'points give %player% 100'
-          - item: "SHULKER_BOX 3"
-      level_39:
-        slot: 22
-        time: 435h
-        display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>39</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>435 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$360,000'
-            - '<dark_gray>❖ <white>38,000 XP'
-            - '<dark_gray>❖ <white>Enchanted Golden Apple ×4'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>435 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$360,000'
-              - '<dark_gray>❖ <white>38,000 XP'
-              - '<dark_gray>❖ <white>Enchanted Golden Apple ×4'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 360000'
-          - command: 'xp give %player% 38000'
-          - item: "ENCHANTED_GOLDEN_APPLE 4"
-      level_40:
-        slot: 23
-        time: 440h
-        display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>40</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>440 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$380,000'
-            - '<dark_gray>❖ <white>40,000 XP'
-            - '<dark_gray>❖ <white>105 Shards'
-            - '<dark_gray>❖ <white>Netherite Block ×2'
-            - '<dark_gray>❖ <white>Nether Star ×5'
-            - '<dark_gray>❖ <white>1x Crate Key'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>440 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$380,000'
-              - '<dark_gray>❖ <white>40,000 XP'
-              - '<dark_gray>❖ <white>105 Shards'
-              - '<dark_gray>❖ <white>Netherite Block ×2'
-              - '<dark_gray>❖ <white>Nether Star ×5'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 380000'
-          - command: 'xp give %player% 40000'
-          - command: 'points give %player% 105'
-          - item: "NETHERITE_BLOCK 2"
-          - item: "NETHER_STAR 5"
-          - command: 'cc give physical Common 1 %player%'
-      level_41:
-        slot: 28
-        time: 450h
-        display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>41</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>450 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$400,000'
-            - '<dark_gray>❖ <white>42,000 XP'
-            - '<dark_gray>❖ <white>Totem Of Undying ×4'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>450 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$400,000'
-              - '<dark_gray>❖ <white>42,000 XP'
-              - '<dark_gray>❖ <white>Totem Of Undying ×4'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 400000'
-          - command: 'xp give %player% 42000'
-          - item: "TOTEM_OF_UNDYING 4"
-      level_42:
-        slot: 29
-        time: 460h
-        display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>42</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>460 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$425,000'
-            - '<dark_gray>❖ <white>44,000 XP'
-            - '<dark_gray>❖ <white>115 Shards'
-            - '<dark_gray>❖ <white>Netherite Ingot ×10'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>460 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$425,000'
-              - '<dark_gray>❖ <white>44,000 XP'
-              - '<dark_gray>❖ <white>115 Shards'
-              - '<dark_gray>❖ <white>Netherite Ingot ×10'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 425000'
-          - command: 'xp give %player% 44000'
-          - command: 'points give %player% 115'
-          - item: "NETHERITE_INGOT 10"
-      level_43:
-        slot: 30
-        time: 470h
-        display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>43</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>470 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$450,000'
-            - '<dark_gray>❖ <white>46,000 XP'
-            - '<dark_gray>❖ <white>Shulker Box ×4'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>470 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$450,000'
-              - '<dark_gray>❖ <white>46,000 XP'
-              - '<dark_gray>❖ <white>Shulker Box ×4'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 450000'
-          - command: 'xp give %player% 46000'
-          - item: "SHULKER_BOX 4"
-      level_44:
-        slot: 31
-        time: 480h
-        display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>44</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>480 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$475,000'
-            - '<dark_gray>❖ <white>48,000 XP'
-            - '<dark_gray>❖ <white>125 Shards'
-            - '<dark_gray>❖ <white>Enchanted Golden Apple ×6'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>480 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$475,000'
-              - '<dark_gray>❖ <white>48,000 XP'
-              - '<dark_gray>❖ <white>125 Shards'
-              - '<dark_gray>❖ <white>Enchanted Golden Apple ×6'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 475000'
-          - command: 'xp give %player% 48000'
-          - command: 'points give %player% 125'
-          - item: "ENCHANTED_GOLDEN_APPLE 6"
-      level_45:
-        slot: 32
-        time: 490h
-        display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>45</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>490 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$500,000'
-            - '<dark_gray>❖ <white>50,000 XP'
-            - '<dark_gray>❖ <white>Netherite Block ×3'
-            - '<dark_gray>❖ <white>1x Crate Key'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>490 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$500,000'
-              - '<dark_gray>❖ <white>50,000 XP'
-              - '<dark_gray>❖ <white>Netherite Block ×3'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 500000'
-          - command: 'xp give %player% 50000'
-          - item: "NETHERITE_BLOCK 3"
-          - command: 'cc give physical Common 1 %player%'
-    fill:
-      material: GREEN_STAINED_GLASS_PANE
-      name: '<white> '
-      lore: []
-    items:
-      close:
-        slot: 49
-        material: BARRIER
-        name: '<bold><gradient:#93291e:#c0252c>Close</gradient></bold> <bold><gradient:#cb2430:#ed213a>Menu</gradient></bold>'
-        lore:
-          - ''
-          - '<white>Click here to'
-          - '<white>close this menu!'
-        action: close
-      store:
-        slot: 16
-        material: EMERALD
-        name: '<bold><gradient:#ff5f6d:#ff9a6f>Helpfufinof</gradient></bold><#ffa070><italic>r<bold><gradient:#ffa670:#ffc371>mation</gradient></bold>'
-        lore:
-          - ''
-          - '<white>Playtime levels are achievable tiers where'
-          - '<white>you can get rewards by playing and voting!'
-          - '<white>the more you play and vote for us, the'
-          - '<white>more in-game rewards you will receive!'
-          - ''
-          - '<bold><gradient:#ff0000:#e40000>Want</gradient></bold> <bold><gradient:#db0000:#d20000>to</gradient></bold> <bold><gradient:#ca0000:#b00000>skip</gradient></bold> <bold><gradient:#a70000:#760000>leveles?</gradient></bold>'
-          - '<white>Purchase an in-game rank or coins'
-          - '<white>to purchase crate keys & cosmetics!'
-          - ''
-          - '<bold><gradient:#ff5f6d:#ff5f6d>C</gradient></bold>LICK HERE TO'
-          - '<bold><gradient:#ff5f6d:#ff5f6d>C</gradient></bold>HECK OUT THE STORE'
-        action:
-          message: '<bold><gradient:#ff5f6d:#ff5f6d>S</gradient></bold>tore: <white>https://store.lifesteal.net'
-          close: true
       stats:
-        slot: 25
-        material: CLOCK
-        name: '<bold><gradient:#c02425:#cb4b29>Your</gradient></bold> <bold><gradient:#cf572a:#f0cb35>Statistics</gradient></bold>'
-        lore:
-          - ''
-          - '<dark_gray>❖ <white>Current playtime: <yellow>%playtime_hours% <white>hours'
-      next:
-        slot: 50
-        material: ARROW
-        name: '<bold><gradient:#1ECB02:#1ECB02>N</gradient></bold>ext Page <dark_gray>[<gray>→<dark_gray>]'
-        lore:
-          - ''
-          - '<white>Head to the next page to'
-          - '<white>obtain more rewards!'
-        action: next-page
-      prev:
-        slot: 48
-        material: ARROW
-        name: '<bold><gradient:#FF3030:#FF3030>P</gradient></bold>revious Page <dark_gray>[<gray>←<dark_gray>]'
-        lore:
-          - ''
-          - '<white>Head to the previous page to'
-          - '<white>obtain more rewards!'
-        action: previous-page
-
-  menu_4:
-    name: '<white>Playtime Levels 4'
-    order: 4
-    title: '         <bold><gradient:#00b09b:#51bd68>Playtime</gradient></bold> <bold><gradient:#5cbf61:#96c93d>Levels</gradient></bold>'
-    rows: 6
-    sounds:
-      open: BLOCK_CHEST_OPEN
-      claim: ENTITY_PLAYER_LEVELUP
-      locked: BLOCK_NOTE_BLOCK_BASS
-      already-claimed: BLOCK_NOTE_BLOCK_BASS
-    rewards:
-      level_46:
-        slot: 10
-        time: 500h
-        display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>46</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>500 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$530,000'
-            - '<dark_gray>❖ <white>52,000 XP'
-            - '<dark_gray>❖ <white>135 Shards'
-            - '<dark_gray>❖ <white>Diamond Block ×15'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>500 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$530,000'
-              - '<dark_gray>❖ <white>52,000 XP'
-              - '<dark_gray>❖ <white>135 Shards'
-              - '<dark_gray>❖ <white>Diamond Block ×15'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 530000'
-          - command: 'xp give %player% 52000'
-          - command: 'points give %player% 135'
-          - item: "DIAMOND_BLOCK 15"
-      level_47:
-        slot: 11
-        time: 510h
-        display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>47</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>510 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$560,000'
-            - '<dark_gray>❖ <white>54,000 XP'
-            - '<dark_gray>❖ <white>Nether Star ×7'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>510 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$560,000'
-              - '<dark_gray>❖ <white>54,000 XP'
-              - '<dark_gray>❖ <white>Nether Star ×7'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 560000'
-          - command: 'xp give %player% 54000'
-          - item: "NETHER_STAR 7"
-      level_48:
-        slot: 12
-        time: 520h
-        display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>48</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>520 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$600,000'
-            - '<dark_gray>❖ <white>56,000 XP'
-            - '<dark_gray>❖ <white>150 Shards'
-            - '<dark_gray>❖ <white>Totem Of Undying ×5'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>520 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$600,000'
-              - '<dark_gray>❖ <white>56,000 XP'
-              - '<dark_gray>❖ <white>150 Shards'
-              - '<dark_gray>❖ <white>Totem Of Undying ×5'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 600000'
-          - command: 'xp give %player% 56000'
-          - command: 'points give %player% 150'
-          - item: "TOTEM_OF_UNDYING 5"
-      level_49:
-        slot: 13
-        time: 530h
-        display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>49</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>530 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$640,000'
-            - '<dark_gray>❖ <white>58,000 XP'
-            - '<dark_gray>❖ <white>Shulker Box ×5'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>530 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$640,000'
-              - '<dark_gray>❖ <white>58,000 XP'
-              - '<dark_gray>❖ <white>Shulker Box ×5'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 640000'
-          - command: 'xp give %player% 58000'
-          - item: "SHULKER_BOX 5"
-      level_50:
-        slot: 14
-        time: 535h
-        display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>50</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>535 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$680,000'
-            - '<dark_gray>❖ <white>60,000 XP'
-            - '<dark_gray>❖ <white>175 Shards'
-            - '<dark_gray>❖ <white>Netherite Block ×5'
-            - '<dark_gray>❖ <white>Nether Star ×10'
-            - '<dark_gray>❖ <white>1x Crate Key'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>535 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$680,000'
-              - '<dark_gray>❖ <white>60,000 XP'
-              - '<dark_gray>❖ <white>175 Shards'
-              - '<dark_gray>❖ <white>Netherite Block ×5'
-              - '<dark_gray>❖ <white>Nether Star ×10'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 680000'
-          - command: 'xp give %player% 60000'
-          - command: 'points give %player% 175'
-          - item: "NETHERITE_BLOCK 5"
-          - item: "NETHER_STAR 10"
-          - command: 'cc give physical Common 1 %player%'
-      level_51:
-        slot: 19
-        time: 540h
-        display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>51</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>540 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$720,000'
-            - '<dark_gray>❖ <white>65,000 XP'
-            - '<dark_gray>❖ <white>Enchanted Golden Apple ×8'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>540 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$720,000'
-              - '<dark_gray>❖ <white>65,000 XP'
-              - '<dark_gray>❖ <white>Enchanted Golden Apple ×8'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 720000'
-          - command: 'xp give %player% 65000'
-          - item: "ENCHANTED_GOLDEN_APPLE 8"
-      level_52:
-        slot: 20
-        time: 544h
-        display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>52</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>544 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$760,000'
-            - '<dark_gray>❖ <white>70,000 XP'
-            - '<dark_gray>❖ <white>200 Shards'
-            - '<dark_gray>❖ <white>Netherite Ingot ×16'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>544 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$760,000'
-              - '<dark_gray>❖ <white>70,000 XP'
-              - '<dark_gray>❖ <white>200 Shards'
-              - '<dark_gray>❖ <white>Netherite Ingot ×16'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 760000'
-          - command: 'xp give %player% 70000'
-          - command: 'points give %player% 200'
-          - item: "NETHERITE_INGOT 16"
-      level_53:
-        slot: 21
-        time: 547h
-        display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>53</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>547 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$800,000'
-            - '<dark_gray>❖ <white>75,000 XP'
-            - '<dark_gray>❖ <white>Totem Of Undying ×6'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>547 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$800,000'
-              - '<dark_gray>❖ <white>75,000 XP'
-              - '<dark_gray>❖ <white>Totem Of Undying ×6'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 800000'
-          - command: 'xp give %player% 75000'
-          - item: "TOTEM_OF_UNDYING 6"
-      level_54:
         slot: 22
-        time: 550h
-        display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>54</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>550 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$840,000'
-            - '<dark_gray>❖ <white>80,000 XP'
-            - '<dark_gray>❖ <white>225 Shards'
-            - '<dark_gray>❖ <white>Shulker Box ×6'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>550 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$840,000'
-              - '<dark_gray>❖ <white>80,000 XP'
-              - '<dark_gray>❖ <white>225 Shards'
-              - '<dark_gray>❖ <white>Shulker Box ×6'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 840000'
-          - command: 'xp give %player% 80000'
-          - command: 'points give %player% 225'
-          - item: "SHULKER_BOX 6"
-      level_55:
-        slot: 23
-        time: 553h
-        display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>55</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>553 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$875,000'
-            - '<dark_gray>❖ <white>85,000 XP'
-            - '<dark_gray>❖ <white>Netherite Block ×7'
-            - '<dark_gray>❖ <white>1x Crate Key'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>553 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$875,000'
-              - '<dark_gray>❖ <white>85,000 XP'
-              - '<dark_gray>❖ <white>Netherite Block ×7'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 875000'
-          - command: 'xp give %player% 85000'
-          - item: "NETHERITE_BLOCK 7"
-          - command: 'cc give physical Common 1 %player%'
-      level_56:
-        slot: 28
-        time: 555h
-        display:
-          name: '<bold><gradient:#b24592:#e45a7e>Level</gradient></bold> <bold><gradient:#f15f79:#f15f79>56</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>555 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$910,000'
-            - '<dark_gray>❖ <white>90,000 XP'
-            - '<dark_gray>❖ <white>250 Shards'
-            - '<dark_gray>❖ <white>Diamond Block ×25'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>555 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$910,000'
-              - '<dark_gray>❖ <white>90,000 XP'
-              - '<dark_gray>❖ <white>250 Shards'
-              - '<dark_gray>❖ <white>Diamond Block ×25'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#b24592:#c74e8a>CLICK</gradient></bold> <bold><gradient:#cc5088:#d25286>TO</gradient></bold> <bold><gradient:#d75483:#f15f79>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 910000'
-          - command: 'xp give %player% 90000'
-          - command: 'points give %player% 250'
-          - item: "DIAMOND_BLOCK 25"
-      level_57:
-        slot: 29
-        time: 557h
-        display:
-          name: '<bold><gradient:#2193b0:#5ec8e1>Level</gradient></bold> <bold><gradient:#6dd5ed:#6dd5ed>57</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>557 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$940,000'
-            - '<dark_gray>❖ <white>95,000 XP'
-            - '<dark_gray>❖ <white>Nether Star ×15'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>557 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$940,000'
-              - '<dark_gray>❖ <white>95,000 XP'
-              - '<dark_gray>❖ <white>Nether Star ×15'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#2193b0:#3aa9c4>CLICK</gradient></bold> <bold><gradient:#41afc9:#47b4cf>TO</gradient></bold> <bold><gradient:#4dbad4:#6dd5ed>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 940000'
-          - command: 'xp give %player% 95000'
-          - item: "NETHER_STAR 15"
-      level_58:
-        slot: 30
-        time: 558h
-        display:
-          name: '<bold><gradient:#56ab2f:#98d559>Level</gradient></bold> <bold><gradient:#a8e063:#a8e063>58</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>558 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$960,000'
-            - '<dark_gray>❖ <white>100,000 XP'
-            - '<dark_gray>❖ <white>300 Shards'
-            - '<dark_gray>❖ <white>Enchanted Golden Apple ×12'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>558 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$960,000'
-              - '<dark_gray>❖ <white>100,000 XP'
-              - '<dark_gray>❖ <white>300 Shards'
-              - '<dark_gray>❖ <white>Enchanted Golden Apple ×12'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#56ab2f:#71bd40>CLICK</gradient></bold> <bold><gradient:#78c145:#7fc649>TO</gradient></bold> <bold><gradient:#86ca4d:#a8e063>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 960000'
-          - command: 'xp give %player% 100000'
-          - command: 'points give %player% 300'
-          - item: "ENCHANTED_GOLDEN_APPLE 12"
-      level_59:
-        slot: 31
-        time: 559h
-        display:
-          name: '<bold><gradient:#ffe600:#e3fa02>Level</gradient></bold> <bold><gradient:#dcff03:#dcff03>59</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>559 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$980,000'
-            - '<dark_gray>❖ <white>110,000 XP'
-            - '<dark_gray>❖ <white>Totem Of Undying ×8'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>559 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$980,000'
-              - '<dark_gray>❖ <white>110,000 XP'
-              - '<dark_gray>❖ <white>Totem Of Undying ×8'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#ffe600:#f3ee01>CLICK</gradient></bold> <bold><gradient:#f0f001:#eef302>TO</gradient></bold> <bold><gradient:#ebf502:#dcff03>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 980000'
-          - command: 'xp give %player% 110000'
-          - item: "TOTEM_OF_UNDYING 8"
-      level_60:
-        slot: 32
-        time: 560h
-        display:
-          name: '<bold><gradient:#cb2d3e:#e8423b>Level</gradient></bold> <bold><gradient:#ef473a:#ef473a>60</gradient></bold>'
-          lore:
-            - ''
-            - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-            - '<dark_gray>❖ <white>560 Hours of Playtime'
-            - ''
-            - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-            - '<dark_gray>❖ <white>$1,000,000'
-            - '<dark_gray>❖ <white>125,000 XP'
-            - '<dark_gray>❖ <white>8000 Shards'
-            - '<dark_gray>❖ <white>Netherite Block ×10'
-            - '<dark_gray>❖ <white>Nether Star ×20'
-            - '<dark_gray>❖ <white>Shulker Box ×10'
-            - '<dark_gray>❖ <white>1x Crate Key'
-            - ''
-            - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-          locked:
-            material: RED_CANDLE
-          claimable:
-            material: YELLOW_CANDLE
-            glow: true
-          claimed:
-            material: LIME_CANDLE
-            glow: true
-            lore:
-              - ''
-              - '<bold><gradient:#f00000:#dc281e>Requirements:</gradient></bold>'
-              - '<dark_gray>❖ <white>560 Hours of Playtime'
-              - ''
-              - '<bold><gradient:#80ff00:#6de012>Rewards:</gradient></bold>'
-              - '<dark_gray>❖ <white>$1,000,000'
-              - '<dark_gray>❖ <white>125,000 XP'
-              - '<dark_gray>❖ <white>8000 Shards'
-              - '<dark_gray>❖ <white>Netherite Block ×10'
-              - '<dark_gray>❖ <white>Nether Star ×20'
-              - '<dark_gray>❖ <white>Shulker Box ×10'
-              - '<dark_gray>❖ <white>1x Crate Key'
-              - ''
-              - '<dark_gray>❖ <bold><gradient:#cb2d3e:#d7363d>CLICK</gradient></bold> <bold><gradient:#da383c:#dd3a3c>TO</gradient></bold> <bold><gradient:#e03c3c:#ef473a>CLAIM</gradient></bold>'
-              - ''
-              - '<green>✓ Claimed'
-        actions:
-          - command: 'addmoney %player% 1000000'
-          - command: 'xp give %player% 125000'
-          - command: 'points give %player% 8000'
-          - item: "NETHERITE_BLOCK 10"
-          - item: "NETHER_STAR 20"
-          - item: "SHULKER_BOX 10"
-          - command: 'cc give physical Common 1 %player%'
-    fill:
-      material: GREEN_STAINED_GLASS_PANE
-      name: '<white> '
-      lore: []
-    items:
-      close:
-        slot: 49
-        material: BARRIER
-        name: '<bold><gradient:#93291e:#c0252c>Close</gradient></bold> <bold><gradient:#cb2430:#ed213a>Menu</gradient></bold>'
-        lore:
-          - ''
-          - '<white>Click here to'
-          - '<white>close this menu!'
-        action: close
-      store:
-        slot: 16
-        material: EMERALD
-        name: '<bold><gradient:#ff5f6d:#ff9a6f>Helpfufinof</gradient></bold><#ffa070><italic>r<bold><gradient:#ffa670:#ffc371>mation</gradient></bold>'
-        lore:
-          - ''
-          - '<white>Playtime levels are achievable tiers where'
-          - '<white>you can get rewards by playing and voting!'
-          - '<white>the more you play and vote for us, the'
-          - '<white>more in-game rewards you will receive!'
-          - ''
-          - '<bold><gradient:#ff0000:#e40000>Want</gradient></bold> <bold><gradient:#db0000:#d20000>to</gradient></bold> <bold><gradient:#ca0000:#b00000>skip</gradient></bold> <bold><gradient:#a70000:#760000>leveles?</gradient></bold>'
-          - '<white>Purchase an in-game rank or coins'
-          - '<white>to purchase crate keys & cosmetics!'
-          - ''
-          - '<bold><gradient:#ff5f6d:#ff5f6d>C</gradient></bold>LICK HERE TO'
-          - '<bold><gradient:#ff5f6d:#ff5f6d>C</gradient></bold>HECK OUT THE STORE'
-        action:
-          message: '<bold><gradient:#ff5f6d:#ff5f6d>S</gradient></bold>tore: <white>https://store.lifesteal.net'
-          close: true
-      stats:
-        slot: 25
         material: CLOCK
-        name: '<bold><gradient:#c02425:#cb4b29>Your</gradient></bold> <bold><gradient:#cf572a:#f0cb35>Statistics</gradient></bold>'
+        name: '<white>Your playtime'
         lore:
-          - ''
-          - '<dark_gray>❖ <white>Current playtime: <yellow>%playtime_hours% <white>hours'
-      prev:
-        slot: 48
-        material: ARROW
-        name: '<bold><gradient:#FF3030:#FF3030>P</gradient></bold>revious Page <dark_gray>[<gray>←<dark_gray>]'
-        lore:
-          - ''
-          - '<white>Head to the previous page to'
-          - '<white>obtain more rewards!'
-        action: previous-page
+        - ''
+        - '<gray>%playtime_hours% hours <dark_gray>(%playtime_minutes% min)'

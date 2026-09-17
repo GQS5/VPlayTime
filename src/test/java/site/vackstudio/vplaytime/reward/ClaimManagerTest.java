@@ -37,7 +37,8 @@ class ClaimManagerTest {
     private static final UUID UUID_A = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final Logger LOG = Logger.getLogger("VPlaytimeTest");
 
-    private static final String CONFIG = """
+    /** Shared by ClaimedStateTest (same package): one valid menu set. */
+    static final String CONFIG = """
             menus:
               main:
                 name: M

@@ -81,6 +81,12 @@ public final class RewardMenu {
         if (data.isEmpty()) {
             return;
         }
+        // ONE provider read per render: with an external (PlaceholderAPI)
+        // source every read is a full placeholder resolution, so resolving
+        // once here instead of per slot keeps opens/refreshes/clicks cheap.
+        // The value is also frozen for the whole render, so every slot and
+        // button in one frame agrees with each other.
+        long effective = playtime.effectivePlaytimeSeconds(player.getUniqueId());
         for (var placement : menu.placements().entrySet()) {
             int slot = placement.getValue();
             if (slot < 0 || slot >= inventory.getSize()) {
@@ -90,10 +96,8 @@ public final class RewardMenu {
             if (def.isEmpty()) {
                 continue;
             }
-            RewardState state = rewards.stateFor(
-                    data.get(), def.get().id(), playtime.effectivePlaytimeSeconds(player.getUniqueId()))
+            RewardState state = rewards.stateFor(data.get(), def.get().id(), effective)
                     .orElse(RewardState.LOCKED);
-            long effective = playtime.effectivePlaytimeSeconds(player.getUniqueId());
             inventory.setItem(slot, ItemFactory.build(RewardStateRenderer.resolve(def.get(), state, effective)));
         }
         for (var item : menu.items().values()) {
@@ -103,9 +107,10 @@ public final class RewardMenu {
             }
             // Buttons show the viewer's own playtime in their text, so a
             // stats button stays live without any server placeholder plugin.
-            // The value comes from the ACTIVE provider (internal or external).
+            // The value comes from the ACTIVE provider (internal or external);
+            // reuse this render's frozen value (see above).
             Placeholders.Context context = new Placeholders.Context(
-                    playtime.effectivePlaytimeSeconds(player.getUniqueId()), 0L, RewardState.LOCKED);
+                    effective, 0L, RewardState.LOCKED);
             List<String> lore = new ArrayList<>(item.lore().size());
             for (String line : item.lore()) {
                 lore.add(Placeholders.resolve(line, context));

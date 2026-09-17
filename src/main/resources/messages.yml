@@ -3,12 +3,15 @@
 # by VackStudio
 # ============================================================
 #
-# You can change any message here without touching anything else.
-# Colors use MiniMessage, for example:
+# Every text VPlaytime sends. Colors use MiniMessage:
 #   <green>  <red>  <yellow>  <gray>  <white>  <gold>
 #
-# Set any message to "" (empty) to hide it.
+# Set any message to "" to hide it.
 # Hidden claim feedback means sound-only feedback.
+#
+# %name% words are placeholders, filled in when sent.
+# Every placeholder is documented below where it is used.
+# Unknown placeholders are removed, never shown raw.
 #
 # After editing, run:  /vplaytime reload
 
@@ -16,14 +19,61 @@
 prefix: "<gray>[<aqua>VPlaytime</aqua>]</gray> "
 
 # Shown when a player's data is still loading.
-loading: "<gray>Loading your playtime data, please try again."
+loading: "<gray>Loading your data — please try again."
+
+general:
+  # Malformed command input. No placeholders.
+  usage: "<gray>Usage: /vplaytime [menu] · /vplaytime reload|info|reset|resetall"
+  # Missing permission. No placeholders.
+  no-permission: "<red>✘ You do not have permission."
+  # Console used a player-only command. No placeholders.
+  players-only: "<red>✘ Players only."
+  # %menu% = the menu id that was requested.
+  unknown-menu: "<red>✘ Unknown menu %menu%."
+  # %player% = the name or UUID that was requested.
+  unknown-player: "<red>✘ Unknown player %player%."
+  # %player% = the looked-up player label.
+  no-data: "<red>✘ No VPlaytime data for %player%."
 
 claim:
-  success: "<green>Reward claimed!"
-  locked: "<red>You do not have enough playtime yet."
-  already-claimed: "<yellow>You already claimed this reward."
-  failed: "<red>Could not claim this reward. Please try again."
+  # A reward was granted. No placeholders.
+  success: "<green>✓ Reward claimed!"
+  # Clicked a locked reward. %required_playtime% = formatted requirement.
+  locked: "<red>✘ Locked — requires %required_playtime%."
+  # Clicked an owned reward. No placeholders.
+  already-claimed: "<yellow>⚠ Already claimed."
+  # Grant failed (rolled back, retry is safe). No placeholders.
+  failed: "<red>✘ Claim failed — try again."
 
 admin:
-  reload-success: "<green>VPlaytime reloaded successfully."
-  reload-failed: "<red>Reload failed. Your previous configuration is still active."
+  reload-success: "<green>✓ VPlaytime reloaded."
+  reload-failed: "<red>✘ Reload failed — previous config still active."
+  # Appended after reload-failed. %detail% = file, path and reason.
+  reload-detail: "<gray>Reason: %detail%"
+  # /vplaytime info. %player% = looked-up label.
+  info-header: "<gold>--- VPlaytime: %player% ---"
+  # %uuid% = player UUID.
+  info-uuid: "<gray>UUID: %uuid%"
+  # Online: %playtime% = effective, %stored% = banked total.
+  info-playtime-online: "<gray>Playtime: %playtime% <dark_gray>(stored %stored%)"
+  # Offline: %playtime% = stored total.
+  info-playtime-offline: "<gray>Playtime: %playtime% <dark_gray>(offline)"
+  # %total% = reward count.
+  info-claims-none: "<gray>Claims: none of %total%"
+  # %claimed% %total% = counts, %list% = reward ids.
+  info-claims: "<gray>Claims: %claimed%/%total% <dark_gray>(%list%)"
+  # %provider% = active playtime source id.
+  info-provider: "<dark_gray>Provider: %provider%"
+  # %reward% = reward id, %player% = label, %note% = outcome detail.
+  reset-done: "<green>Reward %reward% reset for %player%. <gray>%note%"
+  # %player% = label, %detail% = failure detail.
+  reset-failed: "<red>✘ Reset failed for %player%: %detail%"
+  # %detail% = outcome detail, %player% = label.
+  resetall-done: "<green>%detail% for %player%."
+  # Reuses reset-failed (same shape).
+
+gui:
+  # Sent when a menu opens. Empty = silent. %menu% = menu id.
+  menu-opened: ""
+  # Sent when a menu closes. Empty = silent. %menu% = menu id.
+  menu-closed: ""

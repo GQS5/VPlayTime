@@ -28,7 +28,7 @@ class ConfigParsingTest {
                   type: sqlite
                   autosave-seconds: 45
                 playtime:
-                  count-afk: false
+                  provider: internal
                 """));
         assertTrue(global.debugEnabled());
         assertEquals(45, global.autosaveSeconds());
@@ -88,6 +88,29 @@ class ConfigParsingTest {
         MessageConfig messages = ConfigManager.parseMessages(yaml("prefix: \"\"\n"));
         assertEquals("", messages.claimSuccess());
         assertEquals("hi", messages.prefixed("hi"));
+    }
+
+    @Test
+    void legacyMessagesFileStillLoads() throws Exception {
+        // Pre-1.9 files (only claim/admin sections, dead count-afk key)
+        // load fine; new situations default to silent.
+        MessageConfig messages = ConfigManager.parseMessages(yaml("""
+                prefix: "[P] "
+                loading: "wait"
+                playtime:
+                  count-afk: true
+                claim:
+                  success: "got it"
+                admin:
+                  reload-success: "ok"
+                """));
+        assertEquals("[P] got it", messages.prefixed(messages.claimSuccess()));
+        assertEquals("", messages.usage());
+        assertEquals("", messages.unknownPlayer());
+        assertEquals("", messages.resetDone());
+        // The dead count-afk key is ignored; provider still defaults to internal.
+        assertEquals("internal", ConfigManager.parseGlobal(yaml("playtime:\n  count-afk: false\n"))
+                .provider().provider());
     }
 
     @Test

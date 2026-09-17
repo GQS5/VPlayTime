@@ -241,23 +241,21 @@ public final class MenuRegistry {
         if (sec == null) {
             throw err(base, "Menu '" + id + "' must be a section.");
         }
-        String name = sec.getString("name", "");
-        if (name == null || name.isBlank()) {
-            throw err(base + ".name",
-                    "Menu '" + id + "' needs a 'name' (the human-readable label, for example '<white>Long Playtime').");
-        }
-        name = text(base + ".name", name);
-        int order = sec.getInt("order", 0);
-        if (order < 1) {
-            throw err(base + ".order", "Menu '" + id
-                    + "' needs 'order: N' (a unique whole number starting at 1, for example 1, 2, 3).");
-        }
         String title = sec.getString("title", "");
         if (title == null || title.isBlank()) {
             throw err(base + ".title",
                     "Menu '" + id + "' needs a non-blank 'title' (the inventory window title).");
         }
         title = text(base + ".title", title);
+        // 'name' is optional legacy: when omitted the title doubles as the
+        // label. Nothing user-visible reads it separately anymore.
+        String rawName = sec.getString("name", "");
+        String name = (rawName == null || rawName.isBlank()) ? title : text(base + ".name", rawName);
+        int order = sec.getInt("order", 0);
+        if (order < 1) {
+            throw err(base + ".order", "Menu '" + id
+                    + "' needs 'order: N' (a unique whole number starting at 1, for example 1, 2, 3).");
+        }
         int rows = sec.getInt("rows", 3);
         if (rows < 1 || rows > 6) {
             throw err(base + ".rows",

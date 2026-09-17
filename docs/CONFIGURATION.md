@@ -81,13 +81,13 @@ menus:
         display:
           name: 'Level 1'
           locked:    {material: RED_CANDLE, lore: [...]}
-          claimable: {material: YELLOW_CANDLE, lore: [...], glow: true}
+          claimable: {material: ORANGE_CANDLE, lore: [...]}
           claimed:   {material: LIME_CANDLE, lore: [...], glow: true}
         actions:
           - type: command
             command: 'addmoney %player% 1000'
           - type: command
-            command: 'xp give %player% 500'
+            command: 'xp add %player% 500'
           - type: item
             material: DIAMOND
             amount: 10

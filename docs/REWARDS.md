@@ -1,24 +1,24 @@
 # Rewards (shipped default)
 
-Fresh installs ship a working 60-level setup: `level_1`…`level_60` across four 6-row menus (`main`, `menu_2`, `menu_3`, `menu_4`, 15 levels each, `order` 1–4), from **1 hour** (level 1) to **560 hours** (level 60).
+Fresh installs ship a working 15-level setup: `level_1`…`level_15` across three 3-row pages (`main`, `menu_2`, `menu_3`, 5 levels each, `order` 1–3), from **1 hour** (level 1) to **112 hours** (level 15). Rewards sit centered (slots 11–15) with previous/next arrows and a small stats button — no filler, no promo blocks.
 
 ## States
 
 | State | Look | Meaning |
 |---|---|---|
-| LOCKED | red candle | Requirement not met |
-| CLAIMABLE | yellow candle + glow, "CLICK TO CLAIM" | Met, ready to claim |
+| LOCKED | red candle, no glow | Requirement not met |
+| CLAIMABLE | orange candle, no glow, "Click to claim!" | Met, ready to claim |
 | CLAIMED | lime candle + glow, "✓ Claimed" | Granted, permanent |
 
-Claimed always wins over playtime. Each menu also has a stats button (clock, live `%playtime_hours%`), previous/next-page arrows, a store button and filler.
+Claimed always wins over playtime.
 
-## Reward contents (level 1 → 60)
+## Reward contents (level 1 → 15)
 
-- **Money:** `addmoney <player> <amount>`, $1,000 → $1,000,000. Adapt the command to your economy plugin.
-- **XP:** vanilla `xp give <player> <amount>`, 500 → 125,000.
+- **Money:** `addmoney <player> <amount>`, $1,000 → $55,000. Adapt the command to your economy plugin.
+- **XP:** vanilla `xp add <player> <amount>`, 500 → 6,500.
 - **Items:** direct grants (e.g. `RAW_IRON 16`) with full-inventory protection.
-- **Shards (30 levels):** `points give <player> <amount>` — needs a points plugin.
-- **Crates (12 levels):** `cc give physical Common 1 <player>` — needs a crates plugin.
+- **Shards (7 levels):** `points give <player> <amount>` — needs a points plugin.
+- **Crates (3 levels):** `cc give physical Common 1 <player>` — needs a crates plugin.
 
 `points`/`cc` lines assume those integrations exist; at load VPlayTime warns about command roots no enabled plugin provides, and `/vplaytime info` plus the log show exact failures. See `docs/CONFIGURATION.md`.
 
