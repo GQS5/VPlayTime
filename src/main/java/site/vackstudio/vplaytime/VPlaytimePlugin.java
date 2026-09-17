@@ -70,19 +70,33 @@ public final class VPlaytimePlugin extends JavaPlugin {
     public void onEnable() {
         this.rewardManager = new RewardManager(getLogger());
         this.configManager = new ConfigManager(this, rewardManager);
+        // Fail-closed startup: an invalid reward configuration parks the
+        // reward system DISABLED (diagnostics on console) while the plugin
+        // itself stays operational — commands, info and GUI visibility keep
+        // working, but nothing can claim, execute or persist.
+        Map<String, MenuDefinition> bootMenus = null;
         try {
             configManager.load();
+        } catch (site.vackstudio.vplaytime.config.PreflightRejection rejection) {
+            for (String line : rejection.reportLines()) {
+                if (!line.isBlank()) {
+                    getLogger().log(Level.SEVERE, line);
+                }
+            }
+            getLogger().log(Level.SEVERE, "Reward System: DISABLED (" + rejection.playerReason() + ")");
+            bootMenus = rejection.partialMenus();
         } catch (IllegalStateException ex) {
             if (ex instanceof site.vackstudio.vplaytime.config.ConfigError error) {
                 getLogger().log(Level.SEVERE, "Invalid configuration in " + error.file()
                         + (error.path().isBlank() ? "" : " at " + error.path())
-                        + ", disabling VPlaytime: " + error.reason());
+                        + ": " + error.reason());
             } else {
                 getLogger().log(Level.SEVERE,
-                        "Invalid configuration, disabling VPlaytime: " + ex.getMessage());
+                        "Invalid configuration, disabling reward system: " + ex.getMessage());
             }
-            getServer().getPluginManager().disablePlugin(this);
-            return;
+            getLogger().log(Level.SEVERE, "Reward System: DISABLED");
+            rewardManager.disable("configuration could not be loaded", null);
+            bootMenus = Map.of();
         }
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
@@ -109,7 +123,7 @@ public final class VPlaytimePlugin extends JavaPlugin {
                 clock,
                 getLogger(),
                 configManager.debugEnabled());
-        rebuildMenus();
+        rebuildMenus(bootMenus != null ? bootMenus : configManager.menus());
         this.adminService = new AdminService(playtimeManager, rewardManager, storage, clock, getLogger());
         VPlaytimeAPI.setInstance(new VPlaytimeAPI(playtimeManager, rewardManager, claimManager, clock));
         getServer().getPluginManager().registerEvents(
@@ -213,17 +227,18 @@ public final class VPlaytimePlugin extends JavaPlugin {
         this.expansion = ExpansionHost.register(this, playtimeManager, getPluginMeta().getVersion());
     }
 
-    private void rebuildMenus() {
+    private void rebuildMenus(Map<String, MenuDefinition> menus) {
         Map<String, RewardMenu> built = new HashMap<>();
         Map<String, String> spellings = soundSpellings();
-        for (MenuDefinition menu : configManager.menus().values()) {
+        for (MenuDefinition menu : menus.values()) {
             Map<MenuSounds.Kind, site.vackstudio.vplaytime.config.SoundConfig> configured =
                     new EnumMap<>(MenuSounds.Kind.class);
             for (var entry : menu.sounds().entrySet()) {
                 MenuSounds.Kind.byKey(entry.getKey()).ifPresent(kind -> configured.put(kind, entry.getValue()));
             }
             MenuSounds sounds = MenuSounds.load(spellings, menu.id(), configured, getLogger());
-            built.put(menu.id(), new RewardMenu(rewardManager, playtimeManager, clock, menu, sounds));
+            built.put(menu.id(), new RewardMenu(rewardManager, playtimeManager, clock, menu, sounds,
+                    configManager.messages()));
         }
         this.menus = Map.copyOf(built);
     }
@@ -255,12 +270,14 @@ public final class VPlaytimePlugin extends JavaPlugin {
             configManager.load();
         } catch (IllegalStateException ex) {
             for (String line : reloadReport(ex)) {
-                getLogger().log(Level.SEVERE, line);
+                if (!line.isBlank()) {
+                    getLogger().log(Level.SEVERE, line);
+                }
             }
             return Optional.of(firstReason(ex));
         }
         activateProvider();
-        rebuildMenus();
+        rebuildMenus(configManager.menus());
         int reenabled = claimManager.clearSuspended();
         if (reenabled > 0) {
             getLogger().info("Reload re-enabled " + reenabled + " suspended reward(s).");
@@ -292,7 +309,11 @@ public final class VPlaytimePlugin extends JavaPlugin {
         return String.valueOf(ex.getMessage());
     }
 
-    /** Menu opened by bare {@code /vplaytime}; always present (validated). */
+    /**
+     * Menu opened by bare {@code /vplaytime}; present when a valid plan (or
+     * a rejected layout for diagnostics) was loaded, null when nothing
+     * parseable exists. Callers must handle null (unavailable message).
+     */
     public RewardMenu mainMenu() {
         return menus.get(site.vackstudio.vplaytime.config.MenuRegistry.DEFAULT_MENU_ID);
     }

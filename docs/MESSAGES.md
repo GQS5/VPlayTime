@@ -41,6 +41,12 @@ Plus top-level `prefix` (prepended to everything) and `loading` (data still load
 | `info-claims-none` | info body, no claims | `%total%` = reward count |
 | `info-claims` | info body | `%claimed%`, `%total%`, `%list%` = ids |
 | `info-provider` | info body | `%provider%` = active source id |
+| `info-reward-system` | info body | `%status%` = ENABLED/DISABLED |
+| `info-validated` | info body | `%validated%` = VALID count |
+| `info-invalid` | info body | `%invalid%` = INVALID count |
+| `info-unverifiable` | info body | `%unverifiable%` = UNVERIFIABLE count |
+| `info-active-config` | info body | `%status%` = VALID/NONE |
+| `info-disabled-reason` | info body, only while disabled | `%reason%` = why no valid plan is active |
 | `reset-done` | `reset` succeeded | `%reward%`, `%player%`, `%note%` |
 | `reset-failed` | `reset`/`resetall` failed | `%player%`, `%detail%` |
 | `resetall-done` | `resetall` succeeded | `%detail%`, `%player%` |
@@ -51,6 +57,8 @@ Plus top-level `prefix` (prepended to everything) and `loading` (data still load
 |---|---|---|
 | `menu-opened` | Any menu opens (commands, page turns) | `%menu%` = menu id |
 | `menu-closed` | Any menu closes | `%menu%` = menu id |
+| `reward-error-name` | Error-state item title while no valid plan is active | — |
+| `reward-error-lore` | Error-state item lore (list) | — |
 
 ## Deliberately not messaged
 

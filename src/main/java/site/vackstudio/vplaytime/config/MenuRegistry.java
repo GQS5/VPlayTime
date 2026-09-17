@@ -133,9 +133,222 @@ public final class MenuRegistry {
     }
 
     /**
-     * Rewrites {@code next-page} / {@code previous-page} shortcuts into the
-     * neighboring menu in order-sorted sequence (page 1, 2, 3, ...).
+     * Collecting parse: same rules as {@link #parse}, but every problem is
+     * recorded and parsing continues instead of throwing at the first
+     * error. One broken reward never hides the next one; a broken menu
+     * never hides its siblings.
+     *
+     * <p>Collection granularity: menu-fatal problems (bad id/title/order/
+     * rows) skip the whole menu; per-reward and per-button problems skip
+     * only that unit; sound problems degrade to silence for that event;
+     * cross-menu problems (duplicate order, unknown open-menu target,
+     * missing {@code main}) are recorded globally while keeping everything
+     * parseable. The returned menus are partial by design — callers must
+     * run preflight over them and only commit when the combined report is
+     * clean. Never activate a partial result without that gate.
      */
+    public static MenuParseReport parseAll(ConfigurationSection root) {
+        return parseAll(root, RewardDefaults.empty());
+    }
+
+    /**
+     * Collecting parse with file-level display defaults (see
+     * {@link #parse(ConfigurationSection, RewardDefaults)}).
+     */
+    public static MenuParseReport parseAll(ConfigurationSection root, RewardDefaults topDefaults) {
+        List<ConfigError> errors = new ArrayList<>();
+        Map<String, MenuDefinition> parsed = new LinkedHashMap<>();
+        if (root == null) {
+            errors.add(err("menus", "rewards.yml is missing the 'menus' section."));
+            return new MenuParseReport(Map.of(), List.copyOf(errors));
+        }
+        Set<String> ids = root.getKeys(false);
+        if (ids.isEmpty()) {
+            errors.add(err("menus", "rewards.yml defines no menus under 'menus'."));
+            return new MenuParseReport(Map.of(), List.copyOf(errors));
+        }
+        for (String id : ids) {
+            try {
+                MenuDefinition menu = parseMenuLenient(id, root.getConfigurationSection(id), topDefaults, errors);
+                if (menu != null) {
+                    parsed.put(id, menu);
+                }
+            } catch (ConfigError menuFatal) {
+                errors.add(menuFatal);
+            }
+        }
+        if (!parsed.containsKey(DEFAULT_MENU_ID)) {
+            errors.add(err("menus",
+                    "rewards.yml must define a 'main' menu (it is opened by /vplaytime)."));
+        }
+        Map<String, Integer> orders = new HashMap<>();
+        for (MenuDefinition menu : parsed.values()) {
+            String clash = null;
+            for (var entry : orders.entrySet()) {
+                if (entry.getValue() == menu.order()) {
+                    clash = entry.getKey();
+                    break;
+                }
+            }
+            if (clash != null) {
+                errors.add(err("menus",
+                        "Menus '" + clash + "' and '" + menu.id()
+                        + "' share order " + menu.order()
+                        + ". Give each menu its own order number (1, 2, 3, ...)."));
+                continue;
+            }
+            orders.put(menu.id(), menu.order());
+        }
+        for (MenuDefinition menu : parsed.values()) {
+            for (MenuItem item : menu.items().values()) {
+                for (MenuItem.Action action : item.actions()) {
+                    if (action instanceof MenuItem.Action.OpenMenu open
+                            && !parsed.containsKey(open.menuId())) {
+                        errors.add(err("menus." + menu.id() + ".items." + item.id() + ".action.open-menu",
+                                "Button '" + item.id() + "' in menu '" + menu.id()
+                                + "' opens unknown menu '" + open.menuId()
+                                + "'. Available menus: " + String.join(", ", parsed.keySet()) + "."));
+                    }
+                }
+            }
+        }
+        try {
+            resolvePageShortcuts(parsed);
+        } catch (ConfigError misuse) {
+            // Misused next/previous-page on a partial menu set: recorded, and
+            // the shortcut stays unresolved (a dead button, never active
+            // without a clean report). Never throws out of the collector.
+            errors.add(misuse);
+        }
+        return new MenuParseReport(Map.copyOf(parsed), List.copyOf(errors));
+    }
+
+    /**
+     * Lenient twin of {@link #parseMenu}: identical rules (every value check
+     * still lives in the shared {@code parseReward}/{@code parseItem}/
+     * {@code parseSound}/{@code parseFill} helpers), but per-reward and
+     * per-button failures are recorded with {@code errors} and skipped
+     * instead of aborting the menu. Only menu-fatal problems throw.
+     *
+     * @return the menu, or null when it carries no rewards and no buttons
+     *         worth keeping (still recorded, never silently dropped)
+     */
+    private static MenuDefinition parseMenuLenient(
+            String id, ConfigurationSection sec, RewardDefaults top, List<ConfigError> errors) {
+        String base = "menus." + id;
+        if (id == null || !id.matches("[a-z0-9_]+")) {
+            throw err("menus",
+                    "Invalid menu id '" + id + "'. Use lowercase letters, numbers and underscores (for example 'menu_2').");
+        }
+        if (sec == null) {
+            throw err(base, "Menu '" + id + "' must be a section.");
+        }
+        String title = sec.getString("title", "");
+        if (title == null || title.isBlank()) {
+            throw err(base + ".title",
+                    "Menu '" + id + "' needs a non-blank 'title' (the inventory window title).");
+        }
+        title = text(base + ".title", title);
+        String rawName = sec.getString("name", "");
+        String name = (rawName == null || rawName.isBlank()) ? title : text(base + ".name", rawName);
+        int order = sec.getInt("order", 0);
+        if (order < 1) {
+            throw err(base + ".order", "Menu '" + id
+                    + "' needs 'order: N' (a unique whole number starting at 1, for example 1, 2, 3).");
+        }
+        int rows = sec.getInt("rows", 3);
+        if (rows < 1 || rows > 6) {
+            throw err(base + ".rows",
+                    "Menu '" + id + "' has rows: " + rows + ", but rows must be 1-6.");
+        }
+        int size = rows * 9;
+
+        Map<String, SoundConfig> sounds = new HashMap<>();
+        ConfigurationSection soundsSec = sec.getConfigurationSection("sounds");
+        for (String key : SOUND_KEYS) {
+            try {
+                sounds.put(key, parseSound(id, key, soundsSec == null ? null : soundsSec.get(key)));
+            } catch (ConfigError badSound) {
+                errors.add(badSound);
+                sounds.put(key, new SoundConfig("", 1.0f, 1.0f));
+            }
+        }
+
+        Map<String, RewardDefinition> rewards = new LinkedHashMap<>();
+        Map<Integer, String> usedSlots = new HashMap<>();
+        ConfigurationSection rewardsSec = sec.getConfigurationSection("rewards");
+        if (rewardsSec == null || rewardsSec.getKeys(false).isEmpty()) {
+            errors.add(err("menus." + id + ".rewards",
+                    "Menu '" + id + "' defines no rewards under 'rewards'."));
+        } else {
+            RewardDefaults menuDefaults = RewardDefaults.parse(sec.getConfigurationSection("defaults"),
+                    "menus." + id + ".defaults").mergedOver(top);
+            for (String rewardId : rewardsSec.getKeys(false)) {
+                RewardDefinition def;
+                try {
+                    def = parseReward(id, rewardId,
+                            rewardsSec.getConfigurationSection(rewardId), size, menuDefaults, top);
+                } catch (ConfigError badReward) {
+                    errors.add(badReward);
+                    continue;
+                } catch (IllegalStateException badReward) {
+                    errors.add(new ConfigError(FILE, base + ".rewards." + rewardId, badReward.getMessage()));
+                    continue;
+                }
+                String clash = usedSlots.put(def.slot(), rewardId);
+                if (clash != null) {
+                    errors.add(err("menus." + id + ".rewards",
+                            "Menu '" + id + "' shows reward '" + clash + "' and reward '"
+                            + rewardId + "' in the same slot " + def.slot()
+                            + ". Give each reward its own slot."));
+                    continue;
+                }
+                rewards.put(rewardId, def);
+            }
+        }
+
+        Map<String, MenuItem> items = new LinkedHashMap<>();
+        ConfigurationSection itemsSec = sec.getConfigurationSection("items");
+        if (itemsSec != null) {
+            for (String itemId : itemsSec.getKeys(false)) {
+                MenuItem item;
+                try {
+                    item = parseItem(id, itemId, itemsSec.getConfigurationSection(itemId), size);
+                } catch (ConfigError badButton) {
+                    errors.add(badButton);
+                    continue;
+                } catch (IllegalStateException badButton) {
+                    errors.add(new ConfigError(FILE, base + ".items." + itemId, badButton.getMessage()));
+                    continue;
+                }
+                String clash = usedSlots.put(item.slot(), "button '" + itemId + "'");
+                if (clash != null) {
+                    errors.add(err("menus." + id + ".items",
+                            "Menu '" + id + "' shows " + clash + " and button '"
+                            + itemId + "' in the same slot " + item.slot()
+                            + ". Give each reward and button its own slot."));
+                    continue;
+                }
+                items.put(itemId, item);
+            }
+        }
+        MenuFill fill;
+        try {
+            fill = parseFill(id, sec.getConfigurationSection("fill"));
+        } catch (ConfigError badFill) {
+            errors.add(badFill);
+            fill = null;
+        }
+        return new MenuDefinition(id, name, order, title, rows, sounds, rewards, items, fill);
+    }
+
+    /** Partial parse outcome: usable menus plus every collected problem. */
+    public record MenuParseReport(Map<String, MenuDefinition> menus, List<ConfigError> errors) {
+        public MenuParseReport {
+            menus = Map.copyOf(menus == null ? Map.of() : menus);
+            errors = List.copyOf(errors == null ? List.of() : errors);
+        }
+    }
     private static void resolvePageShortcuts(Map<String, MenuDefinition> parsed) {
         List<MenuDefinition> ordered = parsed.values().stream()
                 .sorted(Comparator.comparingInt(MenuDefinition::order).thenComparing(MenuDefinition::id))

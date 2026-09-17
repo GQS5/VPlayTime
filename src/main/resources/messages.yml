@@ -67,6 +67,16 @@ admin:
   info-claims: "<gray>Claims: %claimed%/%total% <dark_gray>(%list%)"
   # %provider% = active playtime source id.
   info-provider: "<dark_gray>Provider: %provider%"
+  # Reward preflight status rows. %status% = ENABLED/DISABLED or VALID/NONE.
+  info-reward-system: "<dark_gray>Reward system: %status%"
+  # %validated% %invalid% %unverifiable% = preflight counts.
+  info-validated: "<gray>Validated rewards: %validated%"
+  info-invalid: "<gray>Invalid rewards: %invalid%"
+  info-unverifiable: "<gray>Unverifiable rewards: %unverifiable%"
+  info-active-config: "<dark_gray>Active configuration: %status%"
+  # Shown after the status rows while the reward system is disabled.
+  # %reason% = why no valid plan is active.
+  info-disabled-reason: "<red>Reason: %reason%"
   # %reward% = reward id, %player% = label, %note% = outcome detail.
   reset-done: "<green>Reward %reward% reset for %player%. <gray>%note%"
   # %player% = label, %detail% = failure detail.
@@ -80,3 +90,11 @@ gui:
   menu-opened: ""
   # Sent when a menu closes. Empty = silent. %menu% = menu id.
   menu-closed: ""
+  # Dedicated non-claimable error state: shown on every reward slot while
+  # no valid reward plan is active (invalid startup). Never carries a claim
+  # instruction and never executes anything. If emptied, built-in English
+  # fallbacks render instead so the error state can never go blank.
+  reward-error-name: "<red>⚠ CONFIGURATION ERROR"
+  reward-error-lore:
+    - "<gray>This reward is temporarily unavailable."
+    - "<gray>Please contact an administrator."

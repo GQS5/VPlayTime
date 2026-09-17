@@ -21,7 +21,13 @@ public record ClaimResult(Status status, String detail) {
          * Cleared by a successful reload (admin fixed the command) —
          * see ClaimManager.
          */
-        SUSPENDED
+        SUSPENDED,
+        /**
+         * Global reward system is DISABLED (no valid plan active): the
+         * attempt is refused before reserving, granting, executing or
+         * persisting anything. Cleared by loading a valid configuration.
+         */
+        DISABLED
     }
 
     public static ClaimResult success() {

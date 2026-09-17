@@ -42,6 +42,11 @@ import java.util.logging.Logger;
  *
  * <p>Guarantees:
  * <ul>
+ *   <li>Global safety gate first: with no valid plan active
+ *       ({@code DISABLED}) every attempt is refused before reserving,
+ *       granting, executing or persisting anything — and membership plus
+ *       gate are re-checked from memory immediately before execution, so a
+ *       reward that stopped being valid can never begin executing.</li>
  *   <li>Duplicate grant is impossible: memory reserve rejects concurrent
  *       attempts; the DB primary key rejects anything memory missed
  *       (conflict self-heals memory back to claimed).</li>
@@ -152,6 +157,14 @@ public final class ClaimManager {
     }
 
     public CompletableFuture<ClaimResult> claim(UUID playerId, String rewardId, ClaimTarget target) {
+        // Global safety gate (memory-only volatile read, first by design):
+        // with no valid plan active nothing may reserve, grant, execute or
+        // persist — GUI, API and admin paths all funnel through here.
+        if (!rewards.systemEnabled()) {
+            return CompletableFuture.completedFuture(ClaimResult.of(
+                    ClaimResult.Status.DISABLED,
+                    "reward system disabled: " + rewards.systemStatus().reason()));
+        }
         RewardDefinition def = rewards.find(rewardId).orElse(null);
         if (def == null) {
             return CompletableFuture.completedFuture(
@@ -235,6 +248,15 @@ public final class ClaimManager {
             UUID executionId,
             long startedNanos,
             CompletableFuture<ClaimResult> done) {
+        // Final defensive check, immediately before execution: the gate and
+        // plan membership are re-read from memory (no YAML, no filesystem,
+        // no scans). A reward that stopped being valid can never begin
+        // executing; the reservation is revoked for retry like any failure.
+        if (!rewards.systemEnabled() || rewards.find(def.id()).isEmpty()) {
+            revoke(data, def, "reward system disabled during claim");
+            done.complete(ClaimResult.of(ClaimResult.Status.REWARD_FAILED, "claim could not complete, try again"));
+            return;
+        }
         // Second capacity check on the player thread with no await between it
         // and delivery: the inventory cannot change underneath us here.
         if (!target.canAccept(def.actions())) {
@@ -320,13 +342,20 @@ public final class ClaimManager {
                 String detail = "command dispatch failed: " + commands.commands().get(j).command()
                         + " (action " + global + "/" + def.actions().size() + ")";
                 UUID playerId = data.uuid();
+                // Pre-known shaky commands (UNVERIFIABLE at load: availability
+                // could not be proven) suspend on the FIRST failure instead
+                // of re-granting earlier actions across three attempts.
+                boolean preKnown = rewards.unverifiableRewardIds().contains(def.id());
                 int cmdStreak = commandFailStreak.merge(def.id(), 1, Integer::sum);
                 scheduler.run(playerId, () -> {
                     revoke(data, def, detail);
-                    if (cmdStreak >= FAIL_ALARM_THRESHOLD
+                    if ((preKnown || cmdStreak >= FAIL_ALARM_THRESHOLD)
                             && suspended.add(def.id())) {
                         logger.log(Level.SEVERE, "Reward '" + def.id() + "' suspended after "
-                                + cmdStreak + " consecutive command failures (last: " + detail + ")."
+                                + (preKnown ? "first failure of a command whose availability"
+                                        + " could not be proven at load"
+                                        : cmdStreak + " consecutive command failures")
+                                + " (last: " + detail + ")."
                                 + " Further attempts are refused WITHOUT granting anything until"
                                 + " an admin fixes the command and runs /vplaytime reload.");
                     }

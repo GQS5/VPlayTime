@@ -29,6 +29,14 @@ public final class RewardManager {
 
     private final Logger logger;
     private volatile Map<String, RewardDefinition> rewards = Map.of();
+    /**
+     * Authoritative reward-system gate. Fresh managers and legacy
+     * {@link #swap} loads stay {@code ENABLED} (previous behavior);
+     * {@link #activatePlan} publishes a validated plan as {@code ENABLED};
+     * {@link #disable} parks the system {@code DISABLED} with the reason.
+     * Volatile read on every claim: memory-only, no I/O, no scans.
+     */
+    private volatile SystemStatus status = SystemStatus.enabled(0);
 
     public RewardManager(Logger logger) {
         this.logger = logger;
@@ -75,7 +83,79 @@ public final class RewardManager {
     /** Publishes a pre-validated map from {@link #parseFromMenus}. */
     public synchronized void swap(Map<String, RewardDefinition> parsed) {
         this.rewards = Map.copyOf(parsed);
+        this.status = SystemStatus.enabled(parsed.size());
         logger.info("Loaded " + parsed.size() + " reward definition(s).");
+    }
+
+    /**
+     * Atomically publishes a validated plan: definitions plus its report
+     * become the active runtime state together, and the system reads
+     * {@code ENABLED}. The only path that activates a new configuration.
+     */
+    public synchronized void activatePlan(ValidatedRewardPlan plan) {
+        if (plan == null || !plan.valid()) {
+            throw new IllegalArgumentException("only a valid plan can be activated");
+        }
+        this.rewards = plan.rewards();
+        this.status = new SystemStatus(RewardSystemState.ENABLED, "",
+                (int) plan.report().validCount(), (int) plan.report().invalidCount(),
+                (int) plan.report().unverifiableCount(), plan.size(), plan);
+        logger.info("Loaded " + plan.size() + " reward definition(s).");
+    }
+
+    /**
+     * Parks the reward system {@code DISABLED} with a human reason. Active
+     * definitions are left untouched (on failed reload the previous plan
+     * stays active underneath; rendering and claims both consult the gate
+     * first, so nothing invalid can execute either way).
+     */
+    public synchronized void disable(String reason, PreflightReport report) {
+        PreflightReport safe = report == null ? PreflightReport.empty() : report;
+        this.status = new SystemStatus(RewardSystemState.DISABLED,
+                reason == null ? "" : reason,
+                (int) safe.validCount(), (int) safe.invalidCount(),
+                (int) safe.unverifiableCount(), rewards.size(), null);
+    }
+
+    /** Central gate: every execution path must consult this first. */
+    public boolean systemEnabled() {
+        return status.state() == RewardSystemState.ENABLED;
+    }
+
+    /** Current gate snapshot for status reporting (info command, logs). */
+    public SystemStatus systemStatus() {
+        return status;
+    }
+
+    /** Reward ids whose load-time availability could not be proven. */
+    public java.util.Set<String> unverifiableRewardIds() {
+        ValidatedRewardPlan plan = status.plan();
+        if (plan == null) {
+            return java.util.Set.of();
+        }
+        return java.util.Set.copyOf(plan.report().unverifiableRewardIds());
+    }
+
+    /**
+     * Gate snapshot: state, reason (non-blank exactly when DISABLED),
+     * validation counts and the active plan (null on legacy loads).
+     */
+    public record SystemStatus(
+            RewardSystemState state,
+            String reason,
+            int validated,
+            int invalid,
+            int unverifiable,
+            int total,
+            ValidatedRewardPlan plan) {
+
+        public SystemStatus {
+            reason = reason == null ? "" : reason;
+        }
+
+        static SystemStatus enabled(int total) {
+            return new SystemStatus(RewardSystemState.ENABLED, "", total, 0, 0, total, null);
+        }
     }
 
     public Optional<RewardDefinition> find(String id) {

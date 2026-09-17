@@ -2,6 +2,68 @@
 
 ## [Unreleased]
 
+### VPlayTime 1.9.2 — Strict fail-closed reward preflight validation (2026-09-18)
+
+- Every reward is validated before activation: structural collect-all parse
+  (all menus/rewards/buttons, never first-error-only) → content merge →
+  semantic preflight over every reward and action → immutable validated
+  plan → atomic commit. Zero INVALID required; UNVERIFIABLE (e.g. `@p`
+  targets) is reported but non-blocking and never a bypass for real errors.
+- Strict rules: `xp add %player% <amount>` only (`xp give`/`exp give`
+  rejected with the fix), `%player%`/`%uuid%`/`%claim_id%`-only placeholders
+  in commands (`%player_name%` rejected), player tokens on player-targeted
+  commands, item material/amount checks, external provider availability
+  (`addmoney`, `addshards`/`points`, `cc`, … must be registered by an
+  enabled plugin). Per-reward VALID/INVALID/UNVERIFIABLE with file, path,
+  reward, level, type, value, reason and fix in one console block.
+- Fail-closed runtime: central ENABLED/DISABLED gate in `RewardManager`,
+  checked first on every claim path (GUI, API, all services) plus a final
+  defensive memory-only re-check immediately before execution — no YAML,
+  filesystem or environment probing at runtime. Invalid startup boots the
+  plugin operational with the system DISABLED and a dedicated non-claimable
+  `⚠ CONFIGURATION ERROR` GUI state; failed reloads keep the last
+  known-good plan untouched. Commands whose availability was unprovable at
+  load suspend on their first execution failure instead of re-granting.
+- `/vplaytime info` reports system status, validated/invalid/unverifiable
+  counts, active configuration and the disable reason (all configurable in
+  `messages.yml`, which also carries the GUI error name/lore).
+- Behavior change: missing mandatory providers and malformed commands now
+  DISABLE the reward system instead of warn-only; a provider that enables
+  later is picked up by the next reload. Existing valid configs load
+  byte-identical (no migration).
+- Tests: +42 (validator rules, collect-all parsing, diagnostics shape,
+  gate blocks all paths, fast suspend, zero runtime probing, activation
+  transitions, error-state rendering, shipped-default clean/rejected ends).
+
+### VPlayTime 1.9.2 — DeluxeMenus-inspired default GUI, native engine (2026-09-18)
+
+New shipped default (`rewards.yml`, fresh installs only):
+
+- 4 menus × 15 levels (`level_1`…`level_60`, 1h → 560h), 6 rows each.
+  Reward rows at slots 10–14, 19–23, 28–32; store info at 16, stats at
+  25, close at 49, next/prev navigation at 50/48, green glass background —
+  the same intended layout as the supplied DeluxeMenus reference.
+- Native implementation only: existing `MenuRegistry` parsing, `RewardMenu`
+  rendering, `RewardMenuListener` clicks, persistent claim state,
+  `PlaytimeProvider`, transactional reload, `MessageConfig`, traffic-light
+  visuals (locked RED, claimable ORANGE, claimed LIME + glow). No
+  DeluxeMenus syntax, actions, conditions, placeholders, scheduling or
+  dependencies anywhere — the JAR works independently.
+- Reward content follows the existing definitions (amounts, hours, `xp add`,
+  `addshards`, `cc` crate lines); DeluxeMenus-only concepts (LuckPerms
+  claim flags, `close`-then-reopen click chains, `%statistic_*%`
+  placeholders, custom-head icons → vanilla BARRIER/EMERALD/CLOCK/ARROW)
+  were mapped to the closest native equivalent or dropped.
+- DeluxeMenus filler range `50-53` collides with the next-page button at
+  slot 50; the native `fill:` only paints empty slots, so the button wins
+  and the bug does not transfer.
+- Existing servers keep their on-disk files (never overwritten, no
+  migration); the new default ships to fresh installs only.
+- Tests: ShippedDefaults rewritten for the 4-page/60-level layout plus a
+  new DefaultGuiLayoutTest (page order, slot mapping, collision scan,
+  navigation chain, hour mapping, state visuals, no-DeluxeMenus markers,
+  native placeholders, internal provider).
+
 ### VPlayTime 1.9 — UX, messages and GUI reliability (2026-09-18)
 
 Claimed-state reliability:

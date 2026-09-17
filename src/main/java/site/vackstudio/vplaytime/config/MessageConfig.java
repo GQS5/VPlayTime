@@ -38,7 +38,17 @@ public record MessageConfig(
         String resetAllDone,
         // gui (opt-in, silent by default)
         String menuOpened,
-        String menuClosed) {
+        String menuClosed,
+        // preflight status rows for /vplaytime info
+        String infoRewardSystem,
+        String infoValidated,
+        String infoInvalid,
+        String infoUnverifiable,
+        String infoActiveConfig,
+        String infoDisabledReason,
+        // dedicated non-claimable GUI error state (invalid startup)
+        String guiRewardErrorName,
+        java.util.List<String> guiRewardErrorLore) {
 
     public MessageConfig {
         prefix = orEmpty(prefix);
@@ -69,6 +79,14 @@ public record MessageConfig(
         resetAllDone = orEmpty(resetAllDone);
         menuOpened = orEmpty(menuOpened);
         menuClosed = orEmpty(menuClosed);
+        infoRewardSystem = orEmpty(infoRewardSystem);
+        infoValidated = orEmpty(infoValidated);
+        infoInvalid = orEmpty(infoInvalid);
+        infoUnverifiable = orEmpty(infoUnverifiable);
+        infoActiveConfig = orEmpty(infoActiveConfig);
+        infoDisabledReason = orEmpty(infoDisabledReason);
+        guiRewardErrorName = orEmpty(guiRewardErrorName);
+        guiRewardErrorLore = guiRewardErrorLore == null ? java.util.List.of() : java.util.List.copyOf(guiRewardErrorLore);
     }
 
     /** Backwards-compatible constructor for the pre-1.9 key set. */
@@ -83,7 +101,8 @@ public record MessageConfig(
             String reloadFailed) {
         this(prefix, loading, "", "", "", "", "", "",
                 claimSuccess, claimLocked, claimAlready, claimFailed, "",
-                reloadOk, reloadFailed, "", "", "", "", "", "", "", "", "", "", "", "", "");
+                reloadOk, reloadFailed, "", "", "", "", "", "", "", "", "", "", "", "", "",
+                "", "", "", "", "", "", "", java.util.List.of());
     }
 
     /** Prepends the configured prefix (empty by default: no behavior change). */

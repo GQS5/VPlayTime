@@ -73,8 +73,15 @@ public final class VPlaytimeCommand implements BasicCommand {
             tell(sender, plugin.configManager().loadingMessage());
             return;
         }
-        plugin.mainMenu().open(player);
-        announceOpened(player, plugin.mainMenu().definition().id());
+        var main = plugin.mainMenu();
+        if (main == null) {
+            // Nothing parseable exists (invalid startup): no menu to open.
+            tell(sender, plugin.configManager().message(
+                    plugin.configManager().messages().claimUnavailable()));
+            return;
+        }
+        main.open(player);
+        announceOpened(player, main.definition().id());
     }
 
     private void openMenuId(CommandSender sender, String menuId) {
@@ -157,6 +164,23 @@ public final class VPlaytimeCommand implements BasicCommand {
             lines.add(manager.message(messages.infoUuid(), Map.of("uuid", info.uuid().toString())));
             lines.add(manager.message(messages.infoProvider(),
                     Map.of("provider", plugin.playtimeManager().providerId())));
+            var status = plugin.rewardManager().systemStatus();
+            lines.add(manager.message(messages.infoRewardSystem(),
+                    Map.of("status", status.state().name())));
+            lines.add(manager.message(messages.infoValidated(),
+                    Map.of("validated", Integer.toString(status.validated()))));
+            lines.add(manager.message(messages.infoInvalid(),
+                    Map.of("invalid", Integer.toString(status.invalid()))));
+            lines.add(manager.message(messages.infoUnverifiable(),
+                    Map.of("unverifiable", Integer.toString(status.unverifiable()))));
+            lines.add(manager.message(messages.infoActiveConfig(),
+                    Map.of("status", status.state()
+                            == site.vackstudio.vplaytime.reward.RewardSystemState.ENABLED
+                            ? "VALID" : "NONE")));
+            if (status.state() != site.vackstudio.vplaytime.reward.RewardSystemState.ENABLED) {
+                lines.add(manager.message(messages.infoDisabledReason(),
+                        Map.of("reason", status.reason())));
+            }
             if (info.online()) {
                 lines.add(manager.message(messages.infoPlaytimeOnline(), Map.of(
                         "playtime", PlaytimeFormat.format(info.effectiveSeconds()),

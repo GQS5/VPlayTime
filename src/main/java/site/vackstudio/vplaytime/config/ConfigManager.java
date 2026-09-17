@@ -4,8 +4,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import site.vackstudio.vplaytime.VPlaytimePlugin;
-import site.vackstudio.vplaytime.model.RewardDefinition;
 import site.vackstudio.vplaytime.reward.RewardManager;
+import site.vackstudio.vplaytime.reward.RewardPlanAssembly;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +43,12 @@ public final class ConfigManager {
             Map.of(MenuRegistry.DEFAULT_MENU_ID, new MenuDefinition(
                     MenuRegistry.DEFAULT_MENU_ID, "Playtime", 1, "Playtime", 3, Map.of(), Map.of(),
                     Map.of(), null)));
+    /**
+     * Partial menus from the last rejected load (invalid startup): used to
+     * render the non-claimable GUI diagnostic state. Empty on every
+     * successful load and after any failed reload that kept a valid plan.
+     */
+    private volatile Map<String, MenuDefinition> rejectedMenus = Map.of();
 
     public ConfigManager(VPlaytimePlugin plugin, RewardManager rewards) {
         this.plugin = plugin;
@@ -86,25 +92,55 @@ public final class ConfigManager {
         YamlConfiguration rewardsYaml = loadYaml("rewards.yml");
         RewardDefaults topDefaults = RewardDefaults.parse(
                 rewardsYaml.getConfigurationSection("defaults"), "defaults");
-        Map<String, MenuDefinition> menus =
-                MenuRegistry.parse(rewardsYaml.getConfigurationSection("menus"), topDefaults);
-        Map<String, RewardDefinition> merged;
-        try {
-            merged = rewards.parseFromMenus(menus);
-        } catch (ConfigError already) {
-            throw already;
-        } catch (IllegalStateException ex) {
-            throw new ConfigError("rewards.yml", "menus", ex.getMessage());
-        }
 
-        // All valid: warn about console commands nothing provides (warn-only),
-        // then commit together.
-        warnForUnknownCommands(merged);
-        rewards.swap(merged);
-        this.snapshot = new ConfigSnapshot(global, messages, menus);
-        plugin.getLogger().info("Configuration valid: " + menus.size() + " menu(s), "
-                + merged.size() + " reward(s).");
-        warnIfStaleMenusFile();
+        // Preflight pipeline (all pure, all collected, nothing published):
+        // structural collect-all parse → content merge → semantic preflight
+        // over every reward → single atomic commit or full rejection.
+        MenuRegistry.MenuParseReport parsed =
+                MenuRegistry.parseAll(rewardsYaml.getConfigurationSection("menus"), topDefaults);
+        RewardPlanAssembly.Outcome outcome = RewardPlanAssembly.assemble(
+                parsed.menus(), parsed.errors(), rewards,
+                new site.vackstudio.vplaytime.reward.BukkitPreflightEnv(plugin));
+        if (outcome instanceof RewardPlanAssembly.Outcome.Ready ready) {
+            rewards.activatePlan(ready.plan());
+            this.snapshot = new ConfigSnapshot(global, messages, ready.menus());
+            this.rejectedMenus = Map.of();
+            plugin.getLogger().info("Reward System: ENABLED");
+            plugin.getLogger().info("Validated Rewards: " + ready.plan().report().validCount());
+            plugin.getLogger().info("Invalid Rewards: 0");
+            plugin.getLogger().info("Unverifiable Rewards: " + ready.plan().report().unverifiableCount());
+            for (String id : ready.plan().report().unverifiableRewardIds()) {
+                plugin.getLogger().warning("Reward '" + id + "' is UNVERIFIABLE"
+                        + " (correctness could not be proven at load); see preflight details above.");
+            }
+            plugin.getLogger().info("Configuration valid: " + ready.menus().size() + " menu(s), "
+                    + ready.plan().size() + " reward(s).");
+            warnIfStaleMenusFile();
+            return;
+        }
+        RewardPlanAssembly.Outcome.Rejected rejected = (RewardPlanAssembly.Outcome.Rejected) outcome;
+        // Fail closed without clobbering: a previous valid plan stays
+        // active (failed reload); only a first-time load with nothing
+        // valid parks the gate DISABLED (invalid startup). The full
+        // diagnostic block is logged once by the caller (plugin enable /
+        // reload failure report), not here.
+        if (rewards.systemStatus().plan() == null && rewards.count() == 0) {
+            rewards.disable(rejected.report().summary(), rejected.report());
+            this.rejectedMenus = rejected.menus();
+            plugin.getLogger().severe("Reward System: DISABLED (" + rejected.report().summary() + ")");
+        } else {
+            plugin.getLogger().warning("Reload rejected (" + rejected.report().summary()
+                    + "); previous valid plan remains active.");
+        }
+        throw new PreflightRejection(rejected.report(), rejected.menus());
+    }
+
+    /**
+     * Partial menus from the last rejected load, for GUI diagnostics when
+     * no valid plan exists. Never activated, never committed.
+     */
+    public Map<String, MenuDefinition> rejectedMenus() {
+        return rejectedMenus;
     }
 
     /**
@@ -116,33 +152,6 @@ public final class ConfigManager {
         if (new File(plugin.getDataFolder(), "menus.yml").exists()) {
             plugin.getLogger().warning("menus.yml exists but is no longer read;"
                     + " menus live in rewards.yml now. Delete menus.yml to silence this warning.");
-        }
-    }
-
-    /**
-     * Warns once per load about console command roots no enabled plugin
-     * provides. Warn-only, never a load failure: a command from a plugin
-     * that enables later still works. But a permanently unknown root means
-     * every claim using it fails and is revoked for retry — re-granting
-     * earlier actions on each attempt — so the warning names the fix.
-     */
-    private void warnForUnknownCommands(Map<String, RewardDefinition> merged) {
-        Map<String, String> unknown =
-                site.vackstudio.vplaytime.reward.CommandFailure.unknownRoots(
-                        merged, root -> {
-                            try {
-                                return org.bukkit.Bukkit.getCommandMap().getCommand(root) != null;
-                            } catch (Exception ex) {
-                                return true;
-                            }
-                        });
-        if (!unknown.isEmpty()) {
-            plugin.getLogger().warning("rewards.yml uses console commands no enabled plugin provides: "
-                    + String.join(", ",
-                            site.vackstudio.vplaytime.reward.CommandFailure.describeUnknown(unknown))
-                    + ". Claims using them will fail and be revoked for retry (earlier actions"
-                    + " re-grant on every retry). Fix the command or install the plugin, then"
-                    + " /vplaytime reload.");
         }
     }
 
@@ -230,7 +239,15 @@ public final class ConfigManager {
                 admin == null ? "" : text("admin.reset-failed", admin.getString("reset-failed", "")),
                 admin == null ? "" : text("admin.resetall-done", admin.getString("resetall-done", "")),
                 gui == null ? "" : text("gui.menu-opened", gui.getString("menu-opened", "")),
-                gui == null ? "" : text("gui.menu-closed", gui.getString("menu-closed", "")));
+                gui == null ? "" : text("gui.menu-closed", gui.getString("menu-closed", "")),
+                admin == null ? "" : text("admin.info-reward-system", admin.getString("info-reward-system", "")),
+                admin == null ? "" : text("admin.info-validated", admin.getString("info-validated", "")),
+                admin == null ? "" : text("admin.info-invalid", admin.getString("info-invalid", "")),
+                admin == null ? "" : text("admin.info-unverifiable", admin.getString("info-unverifiable", "")),
+                admin == null ? "" : text("admin.info-active-config", admin.getString("info-active-config", "")),
+                admin == null ? "" : text("admin.info-disabled-reason", admin.getString("info-disabled-reason", "")),
+                gui == null ? "" : text("gui.reward-error-name", gui.getString("reward-error-name", "")),
+                gui == null ? java.util.List.of() : lore("gui.reward-error-lore", gui.getStringList("reward-error-lore")));
     }
 
     private static String text(String field, String value) {
@@ -241,6 +258,16 @@ public final class ConfigManager {
         } catch (IllegalStateException ex) {
             throw new ConfigError("messages.yml", field, ex.getMessage());
         }
+    }
+
+    private static java.util.List<String> lore(String field, java.util.List<String> lines) {
+        java.util.List<String> out = new java.util.ArrayList<>(lines == null ? 0 : lines.size());
+        if (lines != null) {
+            for (String line : lines) {
+                out.add(text(field, line));
+            }
+        }
+        return java.util.List.copyOf(out);
     }
 
     private YamlConfiguration loadYaml(String name) {

@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import site.vackstudio.vplaytime.config.MenuDefinition;
+import site.vackstudio.vplaytime.config.MessageConfig;
 import site.vackstudio.vplaytime.model.RewardDefinition;
 import site.vackstudio.vplaytime.model.RewardState;
 import site.vackstudio.vplaytime.playtime.PlayerData;
@@ -34,18 +35,21 @@ public final class RewardMenu {
     private final TimeSource clock;
     private final MenuDefinition menu;
     private final MenuSounds sounds;
+    private final MessageConfig messages;
 
     public RewardMenu(
             RewardManager rewards,
             PlaytimeManager playtime,
             TimeSource clock,
             MenuDefinition menu,
-            MenuSounds sounds) {
+            MenuSounds sounds,
+            MessageConfig messages) {
         this.rewards = rewards;
         this.playtime = playtime;
         this.clock = clock;
         this.menu = menu;
         this.sounds = sounds;
+        this.messages = messages;
     }
 
     public MenuDefinition definition() {
@@ -87,9 +91,20 @@ public final class RewardMenu {
         // The value is also frozen for the whole render, so every slot and
         // button in one frame agrees with each other.
         long effective = playtime.effectivePlaytimeSeconds(player.getUniqueId());
+        // Fail-closed rendering: with no valid plan active every reward slot
+        // shows the dedicated error state (never a locked/claimable look
+        // that invites clicking). Buttons and filler render normally.
+        boolean degraded = !rewards.systemEnabled();
+        RenderedReward error = degraded
+                ? RewardErrorState.resolve(messages.guiRewardErrorName(), messages.guiRewardErrorLore())
+                : null;
         for (var placement : menu.placements().entrySet()) {
             int slot = placement.getValue();
             if (slot < 0 || slot >= inventory.getSize()) {
+                continue;
+            }
+            if (degraded) {
+                inventory.setItem(slot, ItemFactory.build(error));
                 continue;
             }
             Optional<RewardDefinition> def = rewards.find(placement.getKey());

@@ -16,7 +16,7 @@ import java.util.List;
  * [VPlaytime] Previous configuration remains active.
  * </pre>
  */
-public final class ConfigError extends IllegalStateException {
+public class ConfigError extends IllegalStateException {
 
     private final String file;
     private final String path;

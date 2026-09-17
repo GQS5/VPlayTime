@@ -100,6 +100,14 @@ public final class RewardMenuListener implements Listener {
         RewardState current = null;
         String resolvedId = menu.definition().slotToReward().get(event.getRawSlot());
         if (resolvedId != null && data.isPresent()) {
+            // Fail-closed clicks: with no valid plan the slots show the
+            // error state; answer with the unavailable message and never
+            // reach validation, persistence or execution.
+            if (!rewards.systemEnabled()) {
+                menu.playSound(player, MenuSounds.Kind.LOCKED);
+                message(player, config.message(config.messages().claimUnavailable()));
+                return;
+            }
             current = rewards.stateFor(data.get(), resolvedId,
                     playtime.effectivePlaytimeSeconds(player.getUniqueId())).orElse(null);
         }
@@ -168,6 +176,10 @@ public final class RewardMenuListener implements Listener {
                             message(player, config.lockedMessage());
                         }
                         case REWARD_FAILED, STORAGE_FAILED -> message(player, config.claimFailedMessage());
+                        case DISABLED -> {
+                            ui.playSound(player, MenuSounds.Kind.LOCKED);
+                            message(player, config.message(config.messages().claimUnavailable()));
+                        }
                         case SUSPENDED -> {
                             ui.playSound(player, MenuSounds.Kind.LOCKED);
                             message(player, config.message(config.messages().claimUnavailable()));

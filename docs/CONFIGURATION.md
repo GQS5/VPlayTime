@@ -41,17 +41,31 @@ playtime:
 
 ### Reload behavior
 
-`/vplaytime reload` re-reads all three files under one monitor (concurrent reloads can't interleave) and swaps menus, rewards, messages, globals **and** the active provider together. Listeners, tasks and registrations are created once at enable and never duplicated. The `%vplaytime_*%` expansion is registered once and reads the live provider, so no re-registration is needed.
+`/vplaytime reload` re-reads all three files under one monitor (concurrent reloads can't interleave), then runs the full reward preflight (see below): only a completely clean candidate commits — menus, rewards, messages, globals **and** the active provider swap together, and a successful reload also clears suspended rewards. Listeners, tasks and registrations are created once at enable and never duplicated. The `%vplaytime_*%` expansion is registered once and reads the live provider, so no re-registration is needed.
+
+### Reward preflight (fail-closed validation)
+
+Every startup and reload runs all of `rewards.yml` through preflight **before anything activates**:
+
+1. **Structural collect-all parse** — every menu, reward and button is checked (ids, slots, materials, amounts, actions, navigation targets); every problem is recorded, never just the first.
+2. **Content merge** — cross-menu copies of a reward id must agree (except slot).
+3. **Semantic preflight over every reward** (locked, later pages, claimed — all of them): every action's command syntax (strict `xp add %player% <amount>` — `xp give`/`exp give` are rejected), item materials/amounts, placeholder well-formedness (`%player%`/`%uuid%`/`%claim_id%` only in commands), player tokens on player-targeted commands, and external provider availability (`addmoney`, `addshards`/`points`, `cc`, … must be provided by an enabled plugin — command registration is the evidence).
+4. Each reward resolves to **VALID / INVALID / UNVERIFIABLE** (unverifiable = sound but not statically provable, e.g. an `@p` target; never a bypass for obvious errors).
+5. **Zero INVALID → atomic commit** of the immutable validated plan. **Any INVALID → full rejection**: the new configuration is discarded completely, the last known-good plan stays active, nothing partially applies.
+
+The console shows the full diagnostic block (`VPlayTime Reward Preflight Validation FAILED` → counts → numbered entries with file, path, reward, type, value, reason, fix → retention line); the player sees the configured `reload-failed` + `reload-detail` summary.
 
 ### Invalid config behavior
 
-Any mistake throws `ConfigError(file, path, reason)`:
+Any mistake is collected as above (single mistakes still throw `ConfigError(file, path, reason)` with the same 4-line report):
 
-- console logs a report (`Reload failed: <file>` → `Invalid value at <dotted.path>` → reason → `Previous configuration remains active.`)
+- console logs the full report ending in `Previous configuration remains active.`
 - the player sees the configured message plus the precise reason
 - **the previous working configuration (including the previous provider) stays active** — the server keeps running on known-good state
 
-At startup, an invalid config disables the plugin with the same file+path detail instead of running broken.
+At startup, an invalid config no longer disables the plugin: it boots operational with the **reward system DISABLED** — commands, `/vplaytime info` and GUI visibility keep working, but every reward slot renders the dedicated `⚠ CONFIGURATION ERROR` state (configurable via `gui.reward-error-name/lore`, never claimable, never executing) and every claim attempt is refused before touching data, storage or executors. Fix the file and `/vplaytime reload` to reactivate.
+
+Recovery procedure: read the console block (or `/vplaytime info` counts), fix each listed path, reload. A provider that enables after VPlayTime is picked up by the next reload.
 
 ### Missing-dependency behavior
 

@@ -4,12 +4,12 @@ Configurable Minecraft playtime rewards plugin with level progression, multiple 
 
 - **Platform:** Paper & Folia (1.21.11, `folia-supported`)
 - **Java:** 21
-- **Current version:** 1.9.0
+- **Current version:** 1.9.2
 - **License:** MIT
 
 ## What it does
 
-VPlayTime tracks how long players have played and lets them claim tiered rewards as they reach playtime milestones. The shipped default contains **15 levels across 3 pages** (1 hour for level 1 up to 112 hours for level 15), each with locked / claimable / claimed display states, atomic claims (never granted twice), and SQLite persistence.
+VPlayTime tracks how long players have played and lets them claim tiered rewards as they reach playtime milestones. The shipped default contains **60 levels across 4 pages** (1 hour for level 1 up to 560 hours for level 60), each with locked / claimable / claimed display states, atomic claims (never granted twice), and SQLite persistence.
 
 ## Requirements
 
@@ -39,7 +39,7 @@ No database setup needed — SQLite storage is created automatically at `plugins
 | `/vplaytime reset <player> <reward>` | `vplaytime.reset` | Remove one claim |
 | `/vplaytime resetall <player>` | `vplaytime.reset` | Remove all claims (`vplaytime.admin` inherits both) |
 
-Reloads are transactional: an invalid file keeps the previous working configuration active and reports the exact file, key path and reason — never a restart.
+Reloads are transactional: the full reward configuration is preflight-validated first — an invalid file keeps the previous working configuration active and reports every issue with file, key path, reason and fix — never a restart. Invalid startup boots the plugin with the reward system DISABLED (safe error-state GUI, nothing claimable) instead of disabling the plugin.
 
 ## Configuration
 
@@ -93,7 +93,7 @@ Details: [`docs/PLACEHOLDERS.md`](docs/PLACEHOLDERS.md).
 
 ## Reward levels (shipped default)
 
-15 levels (`level_1`…`level_15`) across `main`, `menu_2`, `menu_3` (5 per page), from 1 hour to 112 hours. States render red (locked) → orange (claimable) → lime + glow (claimed). Money actions use `addmoney <player> <amount>` (adapt to your economy plugin), XP uses vanilla `xp add`, items use direct grants. Claims are atomic: memory reserve → durable insert → execute; failures revoke for retry and can never double-grant.
+60 levels (`level_1`…`level_60`) across `main`, `menu_2`, `menu_3`, `menu_4` (15 per page, DeluxeMenus-inspired 6-row layout with store/stats/navigation buttons and glass background), from 1 hour to 560 hours. States render red (locked) → orange (claimable) → lime + glow (claimed). Every reward passes strict fail-closed preflight before activation (invalid configs disable the reward system instead of partially applying); money actions use `addmoney <player> <amount>` (adapt to your economy plugin), XP uses vanilla `xp add`, items use direct grants. Claims are atomic: memory reserve → durable insert → execute; failures revoke for retry and can never double-grant.
 
 ## Compatibility / dependencies
 
@@ -116,7 +116,7 @@ Requires JDK 21 (Gradle toolchain resolves it). The JAR lands in `build/libs/VPl
 ./gradlew clean test
 ```
 
-JUnit 5, no server needed (in-memory clocks, temp SQLite databases, YAML fixtures). 301 tests covering config parsing, reload transactions, providers, claims atomicity, GUI math and storage. See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+JUnit 5, no server needed (in-memory clocks, temp SQLite databases, YAML fixtures). 358 tests covering config parsing, preflight validation, reload transactions, providers, claims atomicity, GUI math and storage. See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ## Contributing
 
@@ -128,4 +128,4 @@ MIT — see [`LICENSE`](LICENSE).
 
 ## Releases
 
-Versioned releases with attached, CI-verified JARs: [Releases](https://github.com/GQS5/VPlayTime/releases). Current: **v1.9.0**. History: [`CHANGELOG.md`](CHANGELOG.md).
+Versioned releases with attached, CI-verified JARs: [Releases](https://github.com/GQS5/VPlayTime/releases). Current: **v1.9.2**. History: [`CHANGELOG.md`](CHANGELOG.md).
