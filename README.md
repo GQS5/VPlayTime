@@ -21,7 +21,7 @@ VPlayTime tracks how long players have played and lets them claim tiered rewards
 
 ## Installation
 
-1. Download `VPlaytime-<version>.jar` from the [Releases](https://github.com/VackStudio/VPlayTime/releases) page.
+1. Download `VPlaytime-<version>.jar` from the [Releases](https://github.com/GQS5/VPlayTime/releases) page.
 2. Drop it into your server's `plugins/` folder.
 3. Restart the server (first start generates `config.yml`, `messages.yml`, `rewards.yml`).
 4. Open `/playtime` in game.
@@ -120,7 +120,7 @@ JUnit 5, no server needed (in-memory clocks, temp SQLite databases, YAML fixture
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md). Bug reports and feature requests via [Issues](https://github.com/VackStudio/VPlayTime/issues) (templates provided). Security issues: see [`SECURITY.md`](SECURITY.md) — do not open public issues for vulnerabilities.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). Bug reports and feature requests via [Issues](https://github.com/GQS5/VPlayTime/issues) (templates provided). Security issues: see [`SECURITY.md`](SECURITY.md) — do not open public issues for vulnerabilities.
 
 ## License
 
@@ -128,4 +128,4 @@ MIT — see [`LICENSE`](LICENSE).
 
 ## Releases
 
-Versioned releases with attached, CI-verified JARs: [Releases](https://github.com/VackStudio/VPlayTime/releases). Current: **v1.8.2**. History: [`CHANGELOG.md`](CHANGELOG.md).
+Versioned releases with attached, CI-verified JARs: [Releases](https://github.com/GQS5/VPlayTime/releases). Current: **v1.8.2**. History: [`CHANGELOG.md`](CHANGELOG.md).
