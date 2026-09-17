@@ -86,6 +86,7 @@ class ShippedDefaultsTest {
         assertTrue(messages.unknownPlayer().contains("%player%"));
         assertTrue(messages.noData().contains("%player%"));
         assertTrue(messages.claimLocked().contains("%required_playtime%"));
+        assertTrue(messages.claimUnavailable().contains("unavailable"));
         assertTrue(messages.reloadDetail().contains("%detail%"));
         assertTrue(messages.infoHeader().contains("%player%"));
         assertTrue(messages.infoClaims().contains("%claimed%"));

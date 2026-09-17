@@ -63,7 +63,13 @@ import java.util.logging.Logger;
   *       that: load time warns about unknown command roots, and
   *       {@link #FAIL_ALARM_THRESHOLD} consecutive execution failures raise
   *       one SEVERE alarm naming the reward and the last error.</li>
- *   <li>Offline at execution time: target operations fail safely into the
+  *   <li>Circuit breaker: three consecutive command-dispatch failures
+  *       suspend the reward (SUSPENDED): further attempts are refused
+  *       before reserving or granting anything, so a broken command can
+  *       never re-pay earlier actions per click. Item/scheduler failures
+  *       (usually transient) only feed the alarm streak, never suspension.
+  *       A successful reload clears suspensions — the admin just fixed it.</li>
+  *   <li>Offline at execution time: target operations fail safely into the
  *       revoke path — nothing is granted, nothing is finalized, retry works
  *       after reconnect.</li>
  *   <li>Residual crash risk (unchanged from Phase 4, ms-scale): crash after
@@ -99,6 +105,21 @@ public final class ClaimManager {
     private final Logger logger;
     private final boolean debugLogging;
     private final ConcurrentMap<String, Integer> execFailStreak = new ConcurrentHashMap<>();
+    /**
+     * Consecutive COMMAND-dispatch failures per reward id. Unlike item or
+     * scheduler failures (usually transient), a command returning false
+     * three times in a row is deterministic — same input, same rejection —
+     * so the reward is suspended instead of re-granting earlier actions
+     * forever. Cleared by {@link #clearSuspended()} (successful reload).
+     */
+    private final ConcurrentMap<String, Integer> commandFailStreak = new ConcurrentHashMap<>();
+    /**
+     * Suspended reward ids: claim attempts refuse immediately with
+     * SUSPENDED, granting nothing and touching no storage. Memory-only;
+     * bounded by the reward count.
+     */
+    private final java.util.Set<String> suspended =
+            ConcurrentHashMap.newKeySet();
 
     public ClaimManager(
             RewardManager rewards,
@@ -135,6 +156,14 @@ public final class ClaimManager {
         if (def == null) {
             return CompletableFuture.completedFuture(
                     ClaimResult.of(ClaimResult.Status.NOT_FOUND, "unknown reward '" + rewardId + "'"));
+        }
+        if (suspended.contains(rewardId)) {
+            // Circuit breaker: repeated command failures suspended this
+            // reward. Refuse BEFORE reserving or granting anything, so a
+            // broken command can no longer re-pay earlier actions per click.
+            return CompletableFuture.completedFuture(ClaimResult.of(
+                    ClaimResult.Status.SUSPENDED,
+                    "reward '" + rewardId + "' is suspended after repeated failures"));
         }
         Optional<PlayerData> dataOpt = playtime.find(playerId);
         if (dataOpt.isEmpty()) {
@@ -291,8 +320,16 @@ public final class ClaimManager {
                 String detail = "command dispatch failed: " + commands.commands().get(j).command()
                         + " (action " + global + "/" + def.actions().size() + ")";
                 UUID playerId = data.uuid();
+                int cmdStreak = commandFailStreak.merge(def.id(), 1, Integer::sum);
                 scheduler.run(playerId, () -> {
                     revoke(data, def, detail);
+                    if (cmdStreak >= FAIL_ALARM_THRESHOLD
+                            && suspended.add(def.id())) {
+                        logger.log(Level.SEVERE, "Reward '" + def.id() + "' suspended after "
+                                + cmdStreak + " consecutive command failures (last: " + detail + ")."
+                                + " Further attempts are refused WITHOUT granting anything until"
+                                + " an admin fixes the command and runs /vplaytime reload.");
+                    }
                     done.complete(ClaimResult.of(ClaimResult.Status.REWARD_FAILED, detail));
                 });
                 return;
@@ -310,6 +347,7 @@ public final class ClaimManager {
         debug("Granted reward " + def.id() + " to " + data.uuid()
                 + " execution " + executionId + " in " + millis + "ms");
         execFailStreak.remove(def.id());
+        commandFailStreak.remove(def.id());
         // Claims are already durable; persist the latest playtime snapshot.
         // A failed playtime save keeps dirty and is retried by autosave.
         playtime.saveNow(data);
@@ -334,6 +372,27 @@ public final class ClaimManager {
     /** Consecutive execution failures for one reward id (0 when clean). Test hook. */
     int failStreak(String rewardId) {
         return execFailStreak.getOrDefault(rewardId, 0);
+    }
+
+    /** Whether the reward is currently suspended (refusing attempts). */
+    public boolean isSuspended(String rewardId) {
+        return suspended.contains(rewardId);
+    }
+
+    /**
+     * Re-enables suspended rewards and resets command-failure counts.
+     * Called after a successful reload: the admin may just have fixed the
+     * broken command. Returns how many rewards were re-enabled (logged by
+     * the caller when non-zero).
+     */
+    public int clearSuspended() {
+        commandFailStreak.clear();
+        if (suspended.isEmpty()) {
+            return 0;
+        }
+        int count = suspended.size();
+        suspended.clear();
+        return count;
     }
 
     /**

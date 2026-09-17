@@ -74,6 +74,13 @@ Migration (no forced steps, no restarts):
 - Repeat-failure alarm: 3 consecutive execution failures on one reward
   raise one SEVERE naming the reward + last error (streak resets on
   success, memory-only). The claim flow itself is unchanged.
+- Circuit breaker (production money-farm stop): 3 consecutive
+  COMMAND-dispatch failures suspend the reward (SUSPENDED) — further
+  attempts are refused before reserving or granting anything, so a
+  broken command can no longer re-pay earlier actions per click.
+  Item/scheduler failures (usually transient) never suspend. A
+  successful `/vplaytime reload` clears suspensions. New
+  `claim.unavailable` message ("temporarily unavailable").
 - Note: revoke-for-retry inherently re-runs earlier actions, so any
   permanently failing later step can re-grant. The load warning closes
   the realistic hole (misconfigured commands); keep reward commands

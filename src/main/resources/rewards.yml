@@ -273,6 +273,15 @@ menus:
           - item: "COPPER_BLOCK 8"
           - command: 'cc give physical Common 1 %player%'
     items:
+      info:
+        slot: 4
+        material: BOOK
+        name: '<white>How it works'
+        lore:
+        - ''
+        - '<gray>Earn playtime to unlock levels'
+        - '<gray>Click an orange level to claim it'
+        - '<gray>Claimed levels turn green'
       stats:
         slot: 22
         material: CLOCK
@@ -287,6 +296,13 @@ menus:
         lore:
         - '<gray>More levels ahead'
         action: next-page
+      close:
+        slot: 20
+        material: BARRIER
+        name: '<white>Close'
+        lore:
+        - '<gray>Close this menu'
+        action: close
   menu_2:
     order: 2
     title: '<white>Playtime Levels 2'
@@ -544,6 +560,15 @@ menus:
           - item: "DIAMOND 8"
           - command: 'cc give physical Common 1 %player%'
     items:
+      info:
+        slot: 4
+        material: BOOK
+        name: '<white>How it works'
+        lore:
+        - ''
+        - '<gray>Earn playtime to unlock levels'
+        - '<gray>Click an orange level to claim it'
+        - '<gray>Claimed levels turn green'
       prev:
         slot: 18
         material: ARROW
@@ -565,6 +590,13 @@ menus:
         lore:
         - '<gray>More levels ahead'
         action: next-page
+      close:
+        slot: 20
+        material: BARRIER
+        name: '<white>Close'
+        lore:
+        - '<gray>Close this menu'
+        action: close
   menu_3:
     order: 3
     title: '<white>Playtime Levels 3'
@@ -818,6 +850,15 @@ menus:
           - item: "ENCHANTED_BOOK 3"
           - command: 'cc give physical Common 1 %player%'
     items:
+      info:
+        slot: 4
+        material: BOOK
+        name: '<white>How it works'
+        lore:
+        - ''
+        - '<gray>Earn playtime to unlock levels'
+        - '<gray>Click an orange level to claim it'
+        - '<gray>Claimed levels turn green'
       prev:
         slot: 18
         material: ARROW
@@ -832,3 +873,10 @@ menus:
         lore:
         - ''
         - '<gray>%playtime_hours% hours <dark_gray>(%playtime_minutes% min)'
+      close:
+        slot: 20
+        material: BARRIER
+        name: '<white>Close'
+        lore:
+        - '<gray>Close this menu'
+        action: close

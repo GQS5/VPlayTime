@@ -213,6 +213,7 @@ public final class ConfigManager {
                 claim == null ? "" : text("claim.locked", claim.getString("locked", "")),
                 claim == null ? "" : text("claim.already-claimed", claim.getString("already-claimed", "")),
                 claim == null ? "" : text("claim.failed", claim.getString("failed", "")),
+                claim == null ? "" : text("claim.unavailable", claim.getString("unavailable", "")),
                 admin == null ? "" : text("admin.reload-success", admin.getString("reload-success", "")),
                 admin == null ? "" : text("admin.reload-failed", admin.getString("reload-failed", "")),
                 admin == null ? "" : text("admin.reload-detail", admin.getString("reload-detail", "")),

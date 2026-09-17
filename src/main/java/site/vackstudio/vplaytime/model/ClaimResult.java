@@ -13,7 +13,15 @@ public record ClaimResult(Status status, String detail) {
         LOCKED,
         ALREADY_CLAIMED,
         REWARD_FAILED,
-        STORAGE_FAILED
+        STORAGE_FAILED,
+        /**
+         * Reward auto-suspended after repeated command failures: further
+         * attempts are refused WITHOUT granting anything, so a broken
+         * command can no longer re-pay earlier actions on every click.
+         * Cleared by a successful reload (admin fixed the command) —
+         * see ClaimManager.
+         */
+        SUSPENDED
     }
 
     public static ClaimResult success() {

@@ -168,6 +168,10 @@ public final class RewardMenuListener implements Listener {
                             message(player, config.lockedMessage());
                         }
                         case REWARD_FAILED, STORAGE_FAILED -> message(player, config.claimFailedMessage());
+                        case SUSPENDED -> {
+                            ui.playSound(player, MenuSounds.Kind.LOCKED);
+                            message(player, config.message(config.messages().claimUnavailable()));
+                        }
                         default -> {
                         }
                     }

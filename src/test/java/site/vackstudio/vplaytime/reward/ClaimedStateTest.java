@@ -77,8 +77,7 @@ class ClaimedStateTest {
     }
 
     @Test
-    void failedExecutionDoesNotBecomeClaimed(@TempDir Path dir) throws Exception {
-        try (Harness h = new Harness(dir.resolve("t.db"))) {
+    void failedExecutionDoesNotBecomeClaimed(@TempDir Path dir) throws Exception {        try (Harness h = new Harness(dir.resolve("t.db"))) {
             h.join(UUID_A);
             h.clock.advance(200L);
             FakeTarget target = new FakeTarget(UUID_A, "A");
@@ -132,6 +131,58 @@ class ClaimedStateTest {
             assertEquals(Optional.of(RewardState.CLAIMED),
                     h.rewards.stateFor(data, "reward_3",
                             h.playtime.effectivePlaytimeSeconds(UUID_A)));
+        }
+    }
+
+    @Test
+    void repeatedCommandFailuresSuspendReward(@TempDir Path dir) throws Exception {
+        try (Harness h = new Harness(dir.resolve("t.db"))) {
+            h.join(UUID_A);
+            h.clock.advance(200L);
+            FakeTarget target = new FakeTarget(UUID_A, "A");
+            target.failCommand = true;
+
+            // Three failures: attempted every time (revoked for retry).
+            for (int i = 0; i < ClaimManager.FAIL_ALARM_THRESHOLD; i++) {
+                assertEquals(ClaimResult.Status.REWARD_FAILED,
+                        h.claim(UUID_A, "reward_3", target).status());
+                assertFalse(h.playtime.find(UUID_A).orElseThrow().isClaimed("reward_3"));
+            }
+            assertTrue(h.claims.isSuspended("reward_3"));
+
+            // Fourth attempt: refused BEFORE anything runs — no dispatch,
+            // no reservation, no grant. The failing command never executes.
+            assertEquals(ClaimResult.Status.SUSPENDED,
+                    h.claim(UUID_A, "reward_3", target).status());
+            assertTrue(target.commands.isEmpty());
+            assertFalse(h.playtime.find(UUID_A).orElseThrow().isClaimed("reward_3"));
+
+            // A successful reload (admin fixed the command) re-enables it.
+            assertEquals(1, h.claims.clearSuspended());
+            assertFalse(h.claims.isSuspended("reward_3"));
+            assertEquals(ClaimResult.Status.REWARD_FAILED,
+                    h.claim(UUID_A, "reward_3", target).status());
+
+            // Other rewards are unaffected by one reward's suspension.
+            assertFalse(h.claims.isSuspended("reward_1"));
+        }
+    }
+
+    @Test
+    void itemFailuresDoNotSuspend(@TempDir Path dir) throws Exception {
+        try (Harness h = new Harness(dir.resolve("t.db"))) {
+            h.join(UUID_A);
+            h.clock.advance(2_000L);
+            FakeTarget target = new FakeTarget(UUID_A, "A");
+            target.failGive = true;
+
+            for (int i = 0; i < ClaimManager.FAIL_ALARM_THRESHOLD + 1; i++) {
+                assertEquals(ClaimResult.Status.REWARD_FAILED,
+                        h.claim(UUID_A, "reward_1", target).status());
+            }
+            // Transient delivery failures keep retrying; only deterministic
+            // command rejections suspend.
+            assertFalse(h.claims.isSuspended("reward_1"));
         }
     }
 }

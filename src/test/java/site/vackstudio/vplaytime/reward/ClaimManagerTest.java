@@ -725,6 +725,11 @@ class ClaimManagerTest {
             assertEquals(0, h.claims.failStreak("reward_1"));
 
             target.failCommand = false;
+            // Three command failures suspended the reward, so even the
+            // fixed command is refused until a reload clears it.
+            assertEquals(ClaimResult.Status.SUSPENDED,
+                    h.claim(UUID_A, "reward_3", target).status());
+            assertEquals(1, h.claims.clearSuspended());
             assertEquals(ClaimResult.Status.SUCCESS, h.claim(UUID_A, "reward_3", target).status());
             assertEquals(0, h.claims.failStreak("reward_3"));
         }

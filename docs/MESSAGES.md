@@ -25,6 +25,7 @@ Plus top-level `prefix` (prepended to everything) and `loading` (data still load
 | `locked` | Clicked a locked reward | `%required_playtime%` = formatted requirement |
 | `already-claimed` | Clicked an owned reward | — |
 | `failed` | Grant failed, rolled back, retry is safe | — |
+| `unavailable` | Reward auto-suspended after repeated command failures; attempts refused without granting until `/vplaytime reload` | — |
 
 ## Admin (`admin:`)
 

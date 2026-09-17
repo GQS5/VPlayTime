@@ -44,6 +44,9 @@ claim:
   already-claimed: "<yellow>⚠ Already claimed."
   # Grant failed (rolled back, retry is safe). No placeholders.
   failed: "<red>✘ Claim failed — try again."
+  # Auto-suspended after repeated failures. No retry grants anything.
+  # Cleared by /vplaytime reload once the command is fixed.
+  unavailable: "<yellow>⚠ This reward is temporarily unavailable."
 
 admin:
   reload-success: "<green>✓ VPlaytime reloaded."

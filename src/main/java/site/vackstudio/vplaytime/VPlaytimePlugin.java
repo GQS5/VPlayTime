@@ -261,6 +261,10 @@ public final class VPlaytimePlugin extends JavaPlugin {
         }
         activateProvider();
         rebuildMenus();
+        int reenabled = claimManager.clearSuspended();
+        if (reenabled > 0) {
+            getLogger().info("Reload re-enabled " + reenabled + " suspended reward(s).");
+        }
         return Optional.empty();
     }
 

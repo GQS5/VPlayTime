@@ -21,6 +21,7 @@ public record MessageConfig(
         String claimLocked,
         String claimAlready,
         String claimFailed,
+        String claimUnavailable,
         // admin
         String reloadOk,
         String reloadFailed,
@@ -52,6 +53,7 @@ public record MessageConfig(
         claimLocked = orEmpty(claimLocked);
         claimAlready = orEmpty(claimAlready);
         claimFailed = orEmpty(claimFailed);
+        claimUnavailable = orEmpty(claimUnavailable);
         reloadOk = orEmpty(reloadOk);
         reloadFailed = orEmpty(reloadFailed);
         reloadDetail = orEmpty(reloadDetail);
@@ -80,7 +82,7 @@ public record MessageConfig(
             String reloadOk,
             String reloadFailed) {
         this(prefix, loading, "", "", "", "", "", "",
-                claimSuccess, claimLocked, claimAlready, claimFailed,
+                claimSuccess, claimLocked, claimAlready, claimFailed, "",
                 reloadOk, reloadFailed, "", "", "", "", "", "", "", "", "", "", "", "", "");
     }
 
