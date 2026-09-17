@@ -1,0 +1,60 @@
+plugins {
+    id "java"
+}
+
+group = "site.vackstudio"
+version = "1.8.2"
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = "https://repo.papermc.io/repository/maven-public/" }
+    maven { url = "https://oss.sonatype.org/content/repositories/snapshots/" }
+}
+
+dependencies {
+    compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    // PlaceholderAPI is optional at runtime (softdepend): compileOnly keeps
+    // the jar thin; every PAPI touchpoint is guarded by a presence check.
+    compileOnly("me.clip:placeholderapi:2.11.6")
+    // MiniMessage is a compile dep of paper-api, therefore runtime-provided.
+    compileOnly("net.kyori:adventure-text-minimessage:4.26.1")
+    // compileOnly is invisible to tests; the API is needed to compile AND run
+    // them (jar stays thin: test deps never enter the plugin jar).
+    testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    testImplementation("net.kyori:adventure-text-minimessage:4.26.1")
+    // Test classpath only (the expansion core test loads the PAPI base
+    // class; the plugin jar stays thin — PAPI remains optional at runtime).
+    testImplementation("me.clip:placeholderapi:2.11.6")
+    // SQLite driver: test classpath only. At runtime Paper's library loader
+    // (paper-plugin.yml `libraries`) provides an isolated copy per plugin,
+    // so no shading/relocation is needed and no classes leak into the API.
+    testImplementation("org.xerial:sqlite-jdbc:3.47.1.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.named("test", Test) {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release.set(21)
+}
+
+tasks.named("processResources", Copy) {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    filesMatching("paper-plugin.yml") {
+        expand("version": project.version)
+    }
+}
+
+tasks.named("jar", Jar) {
+    archiveBaseName.set("VPlaytime")
+}

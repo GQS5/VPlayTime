@@ -1,0 +1,47 @@
+# ============================================================
+# VPlaytime - Main Configuration
+# by VackStudio
+# ============================================================
+#
+# This file contains general plugin settings.
+#
+# Rewards and menus are configured in:
+#   rewards.yml
+#
+# Player/admin messages are configured in:
+#   messages.yml
+#
+# Persistent player data is stored in:
+#   data/data.db
+# ============================================================
+
+# Do not change this. It tells VPlaytime which file layout to read.
+config-version: 3
+
+debug:
+  # Extra console logging while setting things up. Turn off afterwards.
+  enabled: false
+
+storage:
+  type: sqlite
+  # How often playtime is saved, in seconds. Minimum: 5.
+  autosave-seconds: 30
+
+playtime:
+  # true = playtime counts even while AFK.
+  count-afk: true
+  # Which clock measures playtime for levels, rewards and GUI text.
+  #   internal    = VPlaytime's own session timer (default, no dependencies).
+  #   placeholder = an external value read through PlaceholderAPI, e.g. a
+  #                 statistics plugin (requires PlaceholderAPI + the expansion
+  #                 that provides the placeholder below).
+  # Future providers (hexacore, vcore) plug into the same slot later.
+  provider: internal
+
+  placeholder:
+    # Any placeholder works; this must be provided by an installed
+    # PlaceholderAPI expansion. Example: the "Statistic" eCloud expansion
+    # (/papi ecloud download Statistic) provides %statistic_seconds_played%.
+    value: '%statistic_seconds_played%'
+    # Unit of the placeholder's number: seconds | minutes | hours | milliseconds.
+    unit: seconds

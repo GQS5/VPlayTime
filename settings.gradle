@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven { url = "https://repo.papermc.io/repository/maven-public/" }
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        mavenCentral()
+        maven { url = "https://repo.papermc.io/repository/maven-public/" }
+        maven { url = "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url = "https://repo.extendedclip.com/releases/" }
+    }
+}
+
+rootProject.name = "VPlaytime"

@@ -1,0 +1,29 @@
+# ============================================================
+# VPlaytime - Messages
+# by VackStudio
+# ============================================================
+#
+# You can change any message here without touching anything else.
+# Colors use MiniMessage, for example:
+#   <green>  <red>  <yellow>  <gray>  <white>  <gold>
+#
+# Set any message to "" (empty) to hide it.
+# Hidden claim feedback means sound-only feedback.
+#
+# After editing, run:  /vplaytime reload
+
+# Text put in front of every message below.
+prefix: "<gray>[<aqua>VPlaytime</aqua>]</gray> "
+
+# Shown when a player's data is still loading.
+loading: "<gray>Loading your playtime data, please try again."
+
+claim:
+  success: "<green>Reward claimed!"
+  locked: "<red>You do not have enough playtime yet."
+  already-claimed: "<yellow>You already claimed this reward."
+  failed: "<red>Could not claim this reward. Please try again."
+
+admin:
+  reload-success: "<green>VPlaytime reloaded successfully."
+  reload-failed: "<red>Reload failed. Your previous configuration is still active."

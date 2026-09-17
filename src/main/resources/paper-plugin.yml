@@ -1,0 +1,34 @@
+name: VPlaytime
+version: ${version}
+main: site.vackstudio.vplaytime.VPlaytimePlugin
+api-version: '1.20'
+folia-supported: true
+author: VackStudio
+description: High-performance persistent playtime rewards for Folia.
+# Commands are registered in code (Paper requirement) via VPlaytimeCommand.
+# PlaceholderAPI is OPTIONAL: VPlaytime runs fully on its internal timer
+# without it. When PAPI is installed it loads first (BEFORE), enabling
+# playtime.provider=placeholder and the %vplaytime_*% expansion.
+# join-classpath is required so VPlaytime can call PlaceholderAPI and
+# register its expansion; PAPI still cannot see OUR classes in return.
+dependencies:
+  server:
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+      join-classpath: true
+# Runtime-only SQLite driver, isolated per plugin by Paper's library loader.
+libraries:
+  - 'org.xerial:sqlite-jdbc:3.47.1.0'
+permissions:
+  vplaytime.use:
+    default: true
+  vplaytime.info:
+    default: op
+  vplaytime.reset:
+    default: op
+  vplaytime.admin:
+    default: op
+    children:
+      vplaytime.info: true
+      vplaytime.reset: true
