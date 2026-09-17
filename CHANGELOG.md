@@ -45,6 +45,9 @@ Messages (8 → 26 situations, all wired, none hardcoded anymore):
 - Deliberately NOT messaged (documented in docs/MESSAGES.md): retry
   prompts, unknown-reward clicks, page-turn notices, provider chat.
 
+- Shards command aligned with production: shipped default uses
+  `addshards %player% N` (7 levels, amounts unchanged) instead of
+  `points give`.
 - Tests: 286 → 301. Docs: new MESSAGES.md; README/CONFIGURATION/
   REWARDS updated to the 3-page default.
 

@@ -17,7 +17,7 @@ Claimed always wins over playtime.
 - **Money:** `addmoney <player> <amount>`, $1,000 → $55,000. Adapt the command to your economy plugin.
 - **XP:** vanilla `xp add <player> <amount>`, 500 → 6,500.
 - **Items:** direct grants (e.g. `RAW_IRON 16`) with full-inventory protection.
-- **Shards (7 levels):** `points give <player> <amount>` — needs a points plugin.
+- **Shards (7 levels):** `addshards <player> <amount>` (VCore shards).
 - **Crates (3 levels):** `cc give physical Common 1 <player>` — needs a crates plugin.
 
 `points`/`cc` lines assume those integrations exist; at load VPlayTime warns about command roots no enabled plugin provides, and `/vplaytime info` plus the log show exact failures. See `docs/CONFIGURATION.md`.

@@ -124,7 +124,7 @@ menus:
         actions:
           - command: 'addmoney %player% 2000'
           - command: 'xp add %player% 750'
-          - command: 'points give %player% 10'
+          - command: 'addshards %player% 10'
           - item: "COAL 24"
       level_3:
         slot: 13
@@ -220,7 +220,7 @@ menus:
         actions:
           - command: 'addmoney %player% 5000'
           - command: 'xp add %player% 1250'
-          - command: 'points give %player% 15'
+          - command: 'addshards %player% 15'
           - item: "IRON_INGOT 12"
       level_5:
         slot: 15
@@ -361,7 +361,7 @@ menus:
         actions:
           - command: 'addmoney %player% 10000'
           - command: 'xp add %player% 2000'
-          - command: 'points give %player% 20'
+          - command: 'addshards %player% 20'
           - item: "GOLD_INGOT 8"
       level_7:
         slot: 12
@@ -457,7 +457,7 @@ menus:
         actions:
           - command: 'addmoney %player% 17000'
           - command: 'xp add %player% 3000'
-          - command: 'points give %player% 25'
+          - command: 'addshards %player% 25'
           - item: "IRON_BLOCK 4"
       level_9:
         slot: 14
@@ -556,7 +556,7 @@ menus:
         actions:
           - command: 'addmoney %player% 26000'
           - command: 'xp add %player% 4000'
-          - command: 'points give %player% 30'
+          - command: 'addshards %player% 30'
           - item: "DIAMOND 8"
           - command: 'cc give physical Common 1 %player%'
     items:
@@ -701,7 +701,7 @@ menus:
         actions:
           - command: 'addmoney %player% 36000'
           - command: 'xp add %player% 5000'
-          - command: 'points give %player% 35'
+          - command: 'addshards %player% 35'
           - item: "DIAMOND 10"
       level_13:
         slot: 13
@@ -797,7 +797,7 @@ menus:
         actions:
           - command: 'addmoney %player% 48000'
           - command: 'xp add %player% 6000'
-          - command: 'points give %player% 40'
+          - command: 'addshards %player% 40'
           - item: "EMERALD_BLOCK 2"
       level_15:
         slot: 15
